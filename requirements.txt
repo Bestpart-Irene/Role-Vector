@@ -1,0 +1,10 @@
+# Core (always needed) — pipeline + metrics run on these alone with the dummy backend
+numpy>=1.24
+pyyaml>=6.0
+
+# Optional extraction backends — install the one matching your chosen model.
+# Model choice is deferred; none of these are required for the dummy backend.
+# transformer-lens>=2.0     # white-box HF models (Llama/Qwen/Gemma)
+# nnsight>=0.3              # extraction + intervention
+# torch>=2.2               # required by the above
+# transformers>=4.44       # tokenizer / model loading

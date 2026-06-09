@@ -1,0 +1,60 @@
+# Roles for Role-Vector validation (from Prez slides 19-20).
+# `default` is the subtraction baseline: its activation is REMOVED from every role vector
+# (role-minus-default) and it is never itself a reported role.
+#
+# Prompting is deliberately MINIMAL to reduce human bias and let personas emerge.
+# `domain_family` ties each role to its in-domain question family in questions.yaml.
+# Close contrasts: (mna_lawyer vs corp_law_prof) = same domain / different function;
+#                  (general_prof vs corp_law_prof) = same function / generalist vs specialist.
+
+baseline:
+  id: default
+  name: Default Assistant
+  reported: false
+  role: "subtraction baseline"
+  prompt: "You are a helpful assistant."
+
+roles:
+  - id: admin_assistant
+    name: Administrative Assistant
+    domain_family: admin_coordination
+    contrast_group: heterogeneous
+    behaviors: [organization, scheduling, follow-up, escalation, ownership, deadlines]
+    prompt: "You are an administrative assistant."
+
+  - id: athlete
+    name: Competitive Athlete
+    domain_family: athletic_training
+    contrast_group: heterogeneous
+    behaviors: [performance, recovery, pressure-management, training-discipline]
+    prompt: "You are a competitive athlete."
+
+  - id: mna_lawyer
+    name: Corporate M&A Lawyer
+    domain_family: corp_txn_legal
+    contrast_group: close_same_domain      # vs corp_law_prof (different function)
+    behaviors: [diligence, negotiation, risk-allocation, closing]
+    prompt: "You are a corporate M&A lawyer."
+
+  - id: corp_law_prof
+    name: Corporations Law Professor
+    domain_family: corp_law_academic
+    contrast_group: close_pivot            # close to BOTH mna_lawyer and general_prof
+    behaviors: [doctrine, governance, standards-of-review, policy]
+    prompt: "You are a corporations law professor."
+
+  - id: general_prof
+    name: General Professor
+    domain_family: general_academic
+    contrast_group: close_same_function    # vs corp_law_prof (generalist vs specialist)
+    behaviors: [teaching, examples, uncertainty-framing, evidence]
+    prompt: "You are a professor."
+
+  - id: cashier
+    name: Grocery Store Cashier
+    domain_family: retail_service
+    contrast_group: heterogeneous
+    behaviors: [checkout, payment, policy, escalation]
+    prompt: "You are a grocery store cashier."
+
+# 6 reported roles -> 15 unique pairs for separability (Q4).
