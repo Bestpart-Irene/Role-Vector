@@ -8,6 +8,11 @@ description: Turn a completed metrics run into a paper-ready write-up — fills 
 ## When to run
 "draft the paper", "write the results section", "make the results table", "update the write-up from the latest run".
 
+## Template
+Fill `templates/paper_template.tex` — it has `{{...}}` placeholders for every number, mapped to the
+four sub-questions. Pull values from `runs/<ts>/meta.json` + the `vector-metrics` report; compile with
+`pdflatex`. Never invent numbers; state the model + run count used.
+
 ## Inputs
 - `runs/latest/meta.json` + the `vector-metrics` report (run it first if stale).
 - `docs/auto-research-survey.md` for related-work positioning.

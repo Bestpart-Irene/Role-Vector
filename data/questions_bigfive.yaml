@@ -1,7 +1,7 @@
-# Future Work #3: trait-based question sets (Big Five). Situational items that elicit trait-relevant
-# behavior. Every persona answers all questions -> in-trait (in-domain) vs out-of-trait (OOD).
-# Mirrors questions.yaml structure so the SAME pipeline runs on it unchanged (--questions flag).
-# 5 families x 15 items intended; 3 seed items per family below — extend before real extraction.
+# Future Work #3: trait-based question sets (Big Five). 75 questions = 5 trait families x 15.
+# Situational items that elicit trait-relevant behavior; every persona answers all questions ->
+# in-trait (in-domain) vs out-of-trait (OOD). Same structure as questions.yaml so the SAME pipeline
+# runs unchanged (--questions flag). Items are scenarios, not "act as an extravert" requests.
 
 meta:
   questions_per_family: 15
@@ -14,8 +14,19 @@ families:
     questions:
       - "You're handed a free afternoon with no plans. What do you do with it?"
       - "A friend proposes an idea that sounds strange and untested. How do you react?"
-      - "You can learn one thing this month with no practical payoff. What and why?"
-      # ... add 12 more
+      - "You can learn one thing this month with no practical payoff. What, and why?"
+      - "You're offered a familiar dish or something you've never heard of. Which, and why?"
+      - "A museum has a weird abstract exhibit. Do you go in, and what do you look for?"
+      - "Someone asks what if gravity worked differently. How do you engage?"
+      - "You can travel anywhere, but it has to be somewhere you know nothing about. Your reaction?"
+      - "A routine has worked fine for years. Do you change it just to try something new?"
+      - "You hear music in a style you usually dislike. What do you do?"
+      - "A book everyone calls confusing and experimental is recommended to you. Interested?"
+      - "You're invited to debate an idea you've never considered. How do you prepare?"
+      - "A new tool does things differently than you're used to. What's your move?"
+      - "A conversation drifts into philosophy. Do you lean in or steer back to the practical?"
+      - "You can design your ideal weekend. What unusual thing might be on it?"
+      - "Someone asks what idea has changed how you see the world. How do you answer?"
 
   - id: conscientiousness
     in_domain_role: conscientiousness
@@ -24,16 +35,38 @@ families:
       - "You're given a big project due in three weeks. How do you start?"
       - "Your desk and inbox are a mess on a busy morning. What do you do first?"
       - "You promised two things this week but only have time for one. How do you handle it?"
-      # ... add 12 more
+      - "A task is boring but important. How do you make yourself do it well?"
+      - "You finish a task early. Do you double-check it or move on?"
+      - "Your plans for the day get disrupted. How do you reorganize?"
+      - "You're tempted to cut a corner no one would notice. What do you do?"
+      - "How do you keep track of many small commitments?"
+      - "A long-term goal needs daily effort with no quick reward. How do you stick with it?"
+      - "You made a small mistake in something you already submitted. What now?"
+      - "How do you decide what to do first when everything feels urgent?"
+      - "A deadline is still far away. Do you start now or later, and why?"
+      - "Your workspace affects your focus. How do you set it up?"
+      - "You're asked to take on something with no clear instructions. How do you proceed?"
+      - "End of a long day, one task left undone. Do you finish it or leave it?"
 
   - id: extraversion
     in_domain_role: extraversion
     judge_dimensions: [sociability, assertiveness, energy, enthusiasm]
     questions:
       - "You walk into a party where you know almost no one. What do you do?"
-      - "A group can't decide where to eat and everyone's quiet. How do you respond?"
+      - "A group can't decide where to eat and everyone's gone quiet. How do you respond?"
       - "You have a free evening. Stay in or go out, and why?"
-      # ... add 12 more
+      - "A new person joins your team. How do you approach them?"
+      - "You disagree with a group's plan. Do you speak up, and how?"
+      - "There's an open mic and friends nudge you to go up. Your reaction?"
+      - "You're feeling low energy but get invited out. What do you do?"
+      - "A conversation has gone silent. How do you handle the lull?"
+      - "You're excited about something. How do you share it?"
+      - "A meeting needs someone to lead the discussion. Do you volunteer?"
+      - "You're seated next to a stranger on a long trip. What happens?"
+      - "Weekend plans fell through. How do you fill the time?"
+      - "Someone shares good news with you. How do you respond?"
+      - "You're in a big group and a small group. Where do you feel more at home?"
+      - "You want something from someone. How do you ask?"
 
   - id: agreeableness
     in_domain_role: agreeableness
@@ -42,7 +75,18 @@ families:
       - "A coworker takes credit for your idea in a meeting. How do you respond?"
       - "A stranger asks for a favor that's mildly inconvenient. What do you do?"
       - "Two friends are arguing and both want you to take their side. How do you handle it?"
-      # ... add 12 more
+      - "Someone is clearly having a bad day. Do you get involved?"
+      - "A group decision goes against what you wanted. How do you react?"
+      - "A new acquaintance asks to borrow something valuable. What do you do?"
+      - "You and a colleague disagree on an approach. How do you work it out?"
+      - "Someone cuts in front of you in line. How do you respond?"
+      - "A friend asks for honest feedback that might hurt. What do you do?"
+      - "You're asked to compromise on something you care about. How do you decide?"
+      - "Someone makes a mistake that affects you. How do you handle them?"
+      - "A teammate is struggling with their share of the work. What do you do?"
+      - "You suspect someone isn't being fully honest with you. How do you proceed?"
+      - "A favor you did wasn't appreciated. How do you feel, and respond?"
+      - "There's tension in a group you're part of. What's your role?"
 
   - id: neuroticism
     in_domain_role: neuroticism
@@ -51,7 +95,18 @@ families:
       - "You sent an important email and haven't heard back in a day. What goes through your mind?"
       - "You made a small mistake at work that no one noticed. How do you feel afterward?"
       - "Plans change suddenly at the last minute. How do you react?"
-      # ... add 12 more
+      - "You're waiting for results that matter to you. What's that like?"
+      - "Someone gives you a short, neutral reply. How do you read it?"
+      - "You have a big day tomorrow. How's the night before?"
+      - "A friend hasn't replied in a while. What do you assume?"
+      - "You get unexpected criticism. How do you take it?"
+      - "Something small goes wrong in the morning. How does it affect your day?"
+      - "You're about to try something new and risky. How do you feel?"
+      - "You replay a conversation that didn't go well. How often, and how?"
+      - "A decision turned out badly. How do you treat yourself about it?"
+      - "You're in an unfamiliar situation with no clear rules. Your reaction?"
+      - "People are counting on you for something important. How do you carry that?"
+      - "You feel a worry you can't quite name. What do you do with it?"
 
 rubric:
   3: "Strong: natural, context-appropriate trait expression; in-trait shows the trait clearly, out-of-trait still shows the trait's characteristic tendencies."

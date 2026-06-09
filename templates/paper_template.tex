@@ -1,0 +1,92 @@
+% Role Vector Validation — paper skeleton.
+% The `paper-draft` skill fills the {{...}} placeholders from runs/report.md + meta.json.
+% Numbers must come from a real run; never invent them. Compile: pdflatex paper_template.tex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs,amsmath,graphicx,hyperref,siunitx}
+\title{From Prompted Agents to Validated Personas:\\
+Validating Role Vectors for Rigorous Synthetic Research}
+\author{Jose L. Sampedro Mazon \\ [redacted] University, [redacted] \\
+\small PI: Dr.\ Nadim Saad \quad Advisor: Dr.\ Ilmi Yoon}
+\date{{\{}\{run\_date\}{\}}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+LLM agent personas are increasingly used as proxies for human roles in synthetic research, yet they
+are typically validated only at the output level. We argue output plausibility is necessary but not
+sufficient, and present a reusable \emph{construct-validation} pipeline that validates personas at the
+activation level. We extract prompted role personas into activation-space vectors
+(role-minus-default, score-2-plus weighting, balanced in/out-of-domain), and test whether they are
+domain-sensitive, stable across repeated extraction, and separable from other roles. % {{one-line headline result}}
+\end{abstract}
+
+\section{Introduction}
+% Motivation: prompted personas drift to the model default in 3--9 turns; emergent behavior is only
+% meaningful if agents reliably instantiate the intended persona. Thesis: validate at the activation level.
+
+\section{Related Work}
+% Nearest prior work: Designing Role Vectors (arXiv:2502.12055) — they USE role vectors to steer; we
+% VALIDATE them as research instruments. Persona vectors, representation engineering, activation
+% addition. Hidden Pitfalls (arXiv:2509.08713) as the failure-mode backdrop. (See docs/auto-research-survey.md.)
+
+\section{Method}
+\textbf{Roles.} Six reported roles plus a default-assistant subtraction baseline, including two close
+contrasts (M\&A lawyer vs.\ corporations-law professor; general vs.\ corporations-law professor).
+\textbf{Questions.} {{n\_questions}} mixed-domain questions across {{n\_families}} families; every role
+answers every question ({{n\_in\_domain}} in-domain $+$ {{n\_ood}} out-of-domain).
+\textbf{Judging.} A domain-aware $0$--$3$ role-adherence rubric (judge model: {{judge\_model}}).
+\textbf{Construction.} Score-2-plus weighted, role-minus-default activations:
+\[ v_{r,l,s} = \frac{\sum_i w_i h_i}{\sum_i w_i},\quad w=3\,(\text{score }3),\ w=2\,(\text{score }2),\ w=0\,(\text{else}); \quad
+\hat v_{r,l,s} = v^{\text{in}}_{r,l,s} + v^{\text{ood}}_{r,l,s}. \]
+Analysis band: layers {{layer\_lo}}--{{layer\_hi}}; {{n\_runs}} repeated extractions; model: {{model}}.
+
+\section{Results}
+\subsection{Q1 — Domain-sensitive signal}
+% Score-3 rate in-domain vs OOD per role; in-domain >> OOD, OOD non-zero.
+\begin{table}[h]\centering
+\begin{tabular}{lcc}\toprule
+Role & Score-3 rate (in-domain) & Score-3 rate (OOD) \\ \midrule
+{{q1\_table\_rows}} \\ \bottomrule
+\end{tabular}\caption{Q1: role expression is domain-sensitive, not domain-limited. {{q1\_verdict}}}\end{table}
+
+\subsection{Q2 — Vector construction}
+% Symmetric normalized separation by construction (raw / rmd / balanced); balanced wins; subtraction essential.
+\begin{table}[h]\centering
+\begin{tabular}{lc}\toprule
+Construction & Mean symmetric separation (layers {{layer\_lo}}--{{layer\_hi}}) \\ \midrule
+raw & {{sep\_raw}} \\ role$-$default & {{sep\_rmd}} \\ balanced (in $+$ ood) & {{sep\_balanced}} \\ \bottomrule
+\end{tabular}\caption{Q2: role-minus-default yields $\sim$5--8$\times$ better separation than raw. {{q2\_verdict}}}\end{table}
+
+\subsection{Q3 — Stability across repeated extraction}
+\begin{table}[h]\centering
+\begin{tabular}{lcccc}\toprule
+Role & Same-role cosine & Same-role Pearson & Stability margin & Cluster \\ \midrule
+{{q3\_table\_rows}} \\ \bottomrule
+\end{tabular}\caption{Q3: cosine $\approx$ Pearson $\approx${{cosine\_mean}}; all margins $>0$; cluster accuracy {{cluster\_acc}}. {{q3\_verdict}}}\end{table}
+
+\subsection{Q4 — Separability (all pairs incl.\ close contrasts)}
+% 15 pairwise separations; closest pair highlighted.
+\begin{table}[h]\centering
+\begin{tabular}{lc}\toprule
+Role pair & Symmetric normalized separation \\ \midrule
+{{q4\_table\_rows}} \\ \bottomrule
+\end{tabular}\caption{Q4: all pairs separable (range {{sep\_min}}--{{sep\_max}}); closest pair {{closest\_pair}} $={{closest\_sep}}$. {{q4\_verdict}}}\end{table}
+
+\subsection{Future Work \#5 (preliminary) — Steering persistence}
+% Per-role prompted-vs-steered role score over T turns; steered holds, prompted drifts.
+{{steer\_summary}}
+
+\section{Limitations}
+% Cross-check against Hidden Pitfalls (arXiv:2509.08713): single-model scope, judge bias, question
+% coverage, leakage. State the model + run count used; report any FAILed check plainly.
+{{limitations}}
+
+\section{Conclusion}
+% Output plausibility is necessary but not sufficient; activation-level validation is an independent
+% check that the intended role is represented consistently and distinctly inside the model.
+
+\bibliographystyle{plain}
+% \bibliography{refs}
+\end{document}

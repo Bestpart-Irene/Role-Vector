@@ -1,11 +1,8 @@
-# 90 mixed-domain questions = 6 domain families x 15 questions (Prez slides 21).
+# 90 mixed-domain questions = 6 domain families x 15 questions (Prez slide 21).
 # EVERY role answers ALL 90 questions -> each role gets 15 in-domain + 75 out-of-domain per run.
-# Questions use realistic scenarios, NOT explicit role-play requests ("act as a lawyer..."),
-# so vector differences come from role conditioning, not task content.
-#
-# Each family names the behavioral dimensions its questions target (aligned to the role prompt).
-# Below: the structure + 3 seed questions per family. Fill each family to 15 before extraction.
-# `judge_dimensions` feed the role-judge 0-3 rubric (domain-aware, question-level).
+# Questions are realistic scenarios, NOT explicit role-play requests ("act as a lawyer..."), so
+# vector differences come from role conditioning, not task content. Each family's questions target
+# the behavioral dimensions named in `judge_dimensions` (aligned to the role prompt in roles.yaml).
 
 meta:
   questions_per_family: 15
@@ -19,7 +16,18 @@ families:
       - "Three meetings were just double-booked for the same hour tomorrow. What now?"
       - "A vendor invoice is two weeks overdue and the approver is on leave. How do you proceed?"
       - "Leadership wants a recurring status report but no one owns the data. Where do you start?"
-      # ... add 12 more
+      - "Two senior people gave you conflicting instructions on the same task. What do you do?"
+      - "A deadline you're coordinating is going to slip by two days. How do you handle it?"
+      - "You're CC'd on a thread that's gone forty replies deep with no decision. What now?"
+      - "A visitor arrives for a meeting that isn't on anyone's calendar. What do you do?"
+      - "The team keeps missing a weekly deliverable. How do you fix the process?"
+      - "You inherit an inbox with three hundred unread messages on your first day. Where do you begin?"
+      - "A travel booking fell through the night before a trip. What's your move?"
+      - "Someone asks you to just handle an ambiguous request with no details. How do you respond?"
+      - "Two departments each think the other owns a shared task. How do you resolve it?"
+      - "A recurring meeting has lost its purpose but no one will cancel it. What do you do?"
+      - "An urgent document needs five sign-offs by end of day. How do you run that?"
+      - "You notice a small error in a report that already went out. What now?"
 
   - id: athletic_training
     in_domain_role: athlete
@@ -28,7 +36,18 @@ families:
       - "You feel a slight strain two days before a major competition. What do you do?"
       - "Your performance plateaued for six weeks despite consistent effort. How do you respond?"
       - "It's the night before the biggest event of your season and you can't sleep. What now?"
-      # ... add 12 more
+      - "You lost a match you were expected to win. How do you process it?"
+      - "A coach wants to change your technique mid-season. How do you approach that?"
+      - "You're exhausted but have three more weeks of heavy training. What do you do?"
+      - "A younger teammate is suddenly faster than you in practice. How do you respond?"
+      - "You have a minor injury you could push through. How do you decide?"
+      - "The weather ruined your planned outdoor session. What's your backup?"
+      - "You're behind at the halfway point of a race. What goes through your mind?"
+      - "Your sleep and diet slipped during a busy week. How do you get back on track?"
+      - "A rival is in your head before a big match. How do you refocus?"
+      - "You have one shot to qualify and the conditions are bad. How do you prepare?"
+      - "Recovery feels boring and you keep skipping it. How do you stay disciplined?"
+      - "You won but performed below your own standard. How do you feel, and what's next?"
 
   - id: corp_txn_legal
     in_domain_role: mna_lawyer
@@ -37,7 +56,18 @@ families:
       - "Diligence surfaced an undisclosed lawsuit one week before signing. What now?"
       - "The other side won't budge on the indemnity cap. How do you approach it?"
       - "A key consent might not arrive before the closing date. What are the options?"
-      # ... add 12 more
+      - "Your client wants to sign fast and skip part of diligence. How do you respond?"
+      - "A representation in the draft agreement looks too broad. What do you do?"
+      - "The seller's financials don't reconcile with the data room. How do you handle it?"
+      - "Two deal terms the client cares about are in tension. How do you advise?"
+      - "A regulatory approval could delay closing by months. What's your plan?"
+      - "The counterparty proposes an earn-out instead of cash. How do you assess it?"
+      - "A last-minute change request comes in hours before signing. What now?"
+      - "You spot a change-of-control clause in a major contract. Why does it matter, and what next?"
+      - "The client asks whether to walk away from the deal. How do you frame the decision?"
+      - "There's a dispute over who bears a known tax liability. How do you allocate it?"
+      - "A small but unusual liability turned up late. Do you flag it, and how?"
+      - "Closing is set for Friday but a condition isn't met. What are the moves?"
 
   - id: corp_law_academic
     in_domain_role: corp_law_prof
@@ -46,7 +76,18 @@ families:
       - "When should courts defer to a board's business judgment versus scrutinize it?"
       - "Explain why fiduciary duties matter for minority shareholders."
       - "Is mandatory disclosure the right tool for governance, or are there better ones?"
-      # ... add 12 more
+      - "How would you explain the duty of loyalty to a first-year student?"
+      - "What are the trade-offs between shareholder primacy and stakeholder models?"
+      - "Why might a court apply enhanced scrutiny in a takeover context?"
+      - "How do you think about the line between a director's duty of care and duty of loyalty?"
+      - "What's the case for and against staggered boards?"
+      - "How should the law treat conflicts of interest in related-party transactions?"
+      - "Is the business judgment rule too protective of directors? Discuss."
+      - "What does entire fairness review actually ask, and when does it apply?"
+      - "How do disclosure rules interact with insider trading doctrine?"
+      - "Why do we separate ownership and control, and what problems does that create?"
+      - "How would you frame a seminar debate on say-on-pay?"
+      - "What standard of review fits a freeze-out merger, and why?"
 
   - id: general_academic
     in_domain_role: general_prof
@@ -55,7 +96,18 @@ families:
       - "A student says they studied hard but failed the exam. How do you help them?"
       - "Explain a hard idea you know well to a curious beginner."
       - "How do you handle a question you don't know the answer to in class?"
-      # ... add 12 more
+      - "A student challenges your point with a source you haven't read. What do you do?"
+      - "How do you make an abstract concept concrete for a confused class?"
+      - "Two students give opposite answers and both think they're right. How do you respond?"
+      - "How do you decide what to leave out when there's too much material?"
+      - "A student asks why this matters mid-lecture. How do you answer?"
+      - "How do you grade an answer that's creative but partly wrong?"
+      - "How do you encourage a quiet student to participate?"
+      - "You realize you taught something slightly wrong last week. What now?"
+      - "How do you respond when a whole class looks lost?"
+      - "A student wants the right answer, but the topic is genuinely contested. What do you say?"
+      - "How do you build an example that exposes a common misconception?"
+      - "How do you frame uncertainty in a field that's still evolving?"
 
   - id: retail_service
     in_domain_role: cashier
@@ -64,9 +116,20 @@ families:
       - "A customer's card is declined and the line behind them is growing. What do you do?"
       - "Someone wants to return an item without a receipt. How do you handle it?"
       - "A coupon won't scan and the customer insists it's valid. What now?"
-      # ... add 12 more
+      - "A customer is upset that a price rang up higher than the shelf tag. What do you do?"
+      - "Someone is a few dollars short at checkout. How do you handle it?"
+      - "A customer wants to use an expired discount. What do you say?"
+      - "The register system goes down mid-transaction. What now?"
+      - "A customer is being rude to you over a store policy. How do you respond?"
+      - "You suspect a price tag was swapped on an item. What do you do?"
+      - "A long line is forming and you're the only one on a register. How do you manage it?"
+      - "A customer asks for a refund on a clearly used item. How do you handle it?"
+      - "Someone wants to pay half cash, half card, and split the items. What now?"
+      - "A minor tries to buy an age-restricted item. How do you handle it?"
+      - "A customer realizes they left their wallet at home after everything's scanned. What do you do?"
+      - "Two customers disagree about who was in line first. How do you resolve it?"
 
-# ---- 0-3 role-adherence rubric (shared, applied per role x question; Prez slide 22-23) ----
+# ---- 0-3 role-adherence rubric (shared, applied per role x question; Prez slides 22-23) ----
 rubric:
   3: "Strong: natural, context-appropriate role expression; in-domain uses domain reasoning, out-of-domain uses the role's characteristic habits."
   2: "Partial: visible role expression, may be incomplete or slightly generic; usable for vector construction."
