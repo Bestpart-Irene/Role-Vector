@@ -38,7 +38,8 @@ class PersistenceResult:
 
 def evaluate_persistence(
     *, role_id: str, turns: int = 9, coeff: float = 8.0,
-    simulate: bool = True, backend=None, role_vector=None,
+    simulate: bool = True, backend=None, role_vector=None, layer: int = 15,
+    role_prompt: str = "", judge=None, role_name: str = "", probes=None,
     floor: float = 2.0, seed: int = 0,
 ) -> PersistenceResult:
     """Measure whether injected role behavior persists across `turns` (rubric scale 0-3).
@@ -47,9 +48,12 @@ def evaluate_persistence(
     prompted-only baseline (i.e., the vector counteracts the documented 3-9 turn drift).
     """
     if not simulate:
-        if backend is None or role_vector is None:
-            raise ValueError("non-simulated mode needs a backend with generate_steered() and a role_vector")
-        return _evaluate_real(role_id, turns, coeff, backend, role_vector, floor)
+        if backend is None or role_vector is None or judge is None:
+            raise ValueError("non-simulated mode needs backend, role_vector, and judge")
+        return _evaluate_real(role_id=role_id, role_name=role_name or role_id,
+                              role_prompt=role_prompt, turns=turns, coeff=coeff, layer=layer,
+                              backend=backend, role_vector=role_vector, judge=judge,
+                              probes=probes, floor=floor)
 
     rng = np.random.default_rng(abs(hash((role_id, seed))) % (2**32))
     s0 = 3.0
@@ -70,10 +74,38 @@ def evaluate_persistence(
     )
 
 
-def _evaluate_real(role_id, turns, coeff, backend, role_vector, floor):  # pragma: no cover - integration
-    """Real eval: drive a multi-turn chat with `backend.generate_steered(..., role_vector, coeff)`
-    and a judge, collecting per-turn role scores. Implement once a model + judge are wired."""
-    raise NotImplementedError(
-        "Wire backend.generate_steered() (nnsight intervention) + a judge, then collect per-turn "
-        "role scores here. Until then call with simulate=True."
+# Generic, role-neutral follow-ups: an out-of-role conversation where prompted personas tend to drift.
+_DEFAULT_PROBES = [
+    "Hey, how's your day going?",
+    "What did you have for lunch?",
+    "Any plans for the weekend?",
+    "Can you recommend a good movie?",
+    "What's the weather like where you are?",
+    "Tell me something interesting.",
+    "How do you usually unwind?",
+    "What's on your mind right now?",
+    "Got any advice for me today?",
+]
+
+
+def _evaluate_real(*, role_id, role_name, role_prompt, turns, coeff, layer,
+                   backend, role_vector, judge, probes, floor):  # pragma: no cover - needs model
+    """Real eval: across `turns` generic follow-ups, generate prompted-only vs vector-steered answers
+    and judge each for role expression (0-3). Steering should hold the role where prompting drifts."""
+    probes = (probes or _DEFAULT_PROBES)[:turns]
+    prompted, steered = [], []
+    for q in probes:
+        a_prompt = backend.generate(role_prompt, q)
+        a_steer = backend.generate_steered(role_prompt, q, role_vector, layer, coeff)
+        kw = dict(role_name=role_name, role_prompt=role_prompt, question=q,
+                  in_domain=False, dimensions=[])
+        prompted.append(float(judge.score(answer=a_prompt, **kw)))
+        steered.append(float(judge.score(answer=a_steer, **kw)))
+
+    p_final, s_final = prompted[-1], steered[-1]
+    passed = (s_final >= floor) and (s_final > p_final)
+    return PersistenceResult(
+        turns=len(probes), coeff=coeff, prompted_scores=prompted, steered_scores=steered,
+        prompted_final=p_final, steered_final=s_final,
+        persistence_gain=s_final - p_final, passed=passed,
     )

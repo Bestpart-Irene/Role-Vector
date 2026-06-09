@@ -1,19 +1,38 @@
 """Model-agnostic activation backends.
 
-A backend's only job: given prompts, return per-layer hidden-state vectors (one vector per prompt
-per layer, mean-pooled over tokens). Everything downstream (role-minus-default, score weighting,
-metrics) is identical regardless of backend.
+A backend's only job: given (role prompt, question, answer), return per-layer hidden-state vectors
+(one vector per layer, mean-pooled over the ANSWER tokens). Everything downstream (role-minus-default,
+score weighting, metrics, steering) is identical regardless of backend.
 
-`DummyBackend` runs today with no model so the pipeline is end-to-end testable. The real backends
-are thin stubs with the exact integration point marked — fill them in once a model is chosen.
+- `DummyBackend` runs with no model (synthetic activations) for wiring/tests.
+- `TransformerLensBackend` / `NNSightBackend` are REAL implementations behind lazy imports, so importing
+  this module never requires torch. nnsight can run remotely on NDIF (free [redacted] access).
 """
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 
 import numpy as np
 
 from .config import Config
+
+
+def _chat_prefix(tokenizer, role_prompt: str, question: str) -> str:
+    """Render (system=role, user=question) with the model's chat template, ready for the answer."""
+    msgs = [{"role": "system", "content": role_prompt}, {"role": "user", "content": question}]
+    try:
+        return tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+    except Exception:
+        return f"{role_prompt}\n\nUser: {question}\nAssistant: "
+
+
+def _to_numpy(x) -> np.ndarray:
+    """Resolve an nnsight proxy / torch tensor to a 1-D float32 numpy array."""
+    x = getattr(x, "value", x)              # nnsight <0.3 used .value
+    if hasattr(x, "detach"):
+        x = x.detach().to("cpu").float().numpy()
+    return np.asarray(x, dtype=np.float32).reshape(-1)
 
 
 class ActivationBackend(ABC):
@@ -23,34 +42,27 @@ class ActivationBackend(ABC):
         self.cfg = cfg
 
     @abstractmethod
-    def hidden_states(self, prompt: str, text: str) -> dict[int, np.ndarray]:
-        """Return {layer: vector} for one (role-prompt, generated/forced text) pair.
-
-        Keys are layer indices in cfg.layers; each value is a 1-D float array of size hidden_dim,
-        mean-pooled over the answer tokens.
-        """
+    def hidden_states(self, role_prompt: str, question: str, answer: str) -> dict[int, np.ndarray]:
+        """Return {layer: vector} for one (role prompt, question, answer) triple.
+        Each value is a 1-D float array of size hidden_dim, mean-pooled over the answer tokens."""
 
     @property
     @abstractmethod
     def hidden_dim(self) -> int: ...
 
     def generate(self, role_prompt: str, question: str) -> str:
-        """Produce the role's answer to a question. Real backends override with model generation;
-        the default returns a deterministic placeholder so the dummy pipeline is self-contained."""
+        """Produce the role's answer to a question. Real backends override; the default returns a
+        deterministic placeholder so the dummy pipeline is self-contained."""
         return f"[answer:{abs(hash((role_prompt, question))) % 10_000}]"
 
-    def generate_steered(self, prompt: str, question: str, vector, layer: int, coeff: float) -> str:
+    def generate_steered(self, role_prompt: str, question: str, vector, layer: int, coeff: float) -> str:
         """Future Work #5: generate while adding `coeff * vector` to `layer`'s residual stream.
-        Real backends override (nnsight intervention). Default falls back to unsteered generation."""
-        return self.generate(prompt, question)
+        Default falls back to unsteered generation (dummy)."""
+        return self.generate(role_prompt, question)
 
 
 class DummyBackend(ActivationBackend):
-    """Deterministic random activations — for wiring/tests, NOT for real results.
-
-    Encodes a faint, reproducible per-(role,layer) signal plus noise so that downstream metrics
-    produce sane, non-degenerate numbers (same-role > cross-role, separable roles).
-    """
+    """Deterministic synthetic activations — for wiring/tests, NOT for real results."""
 
     def __init__(self, cfg: Config):
         super().__init__(cfg)
@@ -68,75 +80,114 @@ class DummyBackend(ActivationBackend):
             self._role_centers[key] = np.random.default_rng(h).standard_normal(self._dim)
         return self._role_centers[key]
 
-    def hidden_states(self, prompt: str, text: str) -> dict[int, np.ndarray]:
-        # Stable role/layer signal + small noise -> realistic stability & separability.
-        # The baseline (default-assistant) center is de-emphasized so that, after role-minus-default
-        # subtraction, the role-specific component dominates and roles come out genuinely separable
-        # (matching the deck's finding that all pairs separate). Purely synthetic — not real signal.
-        is_baseline = (prompt == self.cfg.baseline_prompt)
-        scale = 0.1 if is_baseline else 1.0
+    def hidden_states(self, role_prompt: str, question: str, answer: str) -> dict[int, np.ndarray]:
+        # Stable per-(role,layer) signal + noise. The baseline center is de-emphasized so that, after
+        # role-minus-default subtraction, the role-specific component dominates and roles come out
+        # separable (matching the deck). Purely synthetic — question/answer ignored on purpose.
+        scale = 0.1 if role_prompt == self.cfg.baseline_prompt else 1.0
         out = {}
         for layer in self.cfg.layers:
-            center = self._center(f"{prompt}|{layer}") * scale
-            noise = self._rng.standard_normal(self._dim) * 0.35
-            out[layer] = center + noise
+            center = self._center(f"{role_prompt}|{layer}") * scale
+            out[layer] = center + self._rng.standard_normal(self._dim) * 0.35
         return out
 
 
 class TransformerLensBackend(ActivationBackend):
-    """White-box HF models (Llama/Qwen/Gemma) via TransformerLens `run_with_cache`.
-
-    INTEGRATION POINT (fill once model chosen):
-        from transformer_lens import HookedTransformer
-        self.model = HookedTransformer.from_pretrained(cfg.require_model())
-        _, cache = self.model.run_with_cache(prompt + text)
-        # mean-pool resid_post over answer tokens for each layer in cfg.layers
-    """
+    """Local white-box HF models (Llama/Qwen/Gemma) via TransformerLens `run_with_cache`."""
 
     def __init__(self, cfg: Config):
         super().__init__(cfg)
-        cfg.require_model()
-        raise NotImplementedError(
-            "TransformerLensBackend is a stub. Install transformer-lens, set --model, "
-            "and implement hidden_states() at the marked integration point."
-        )
+        from transformer_lens import HookedTransformer  # lazy
+        self.model = HookedTransformer.from_pretrained(cfg.require_model())
+        self.tokenizer = self.model.tokenizer
+        self._dim = self.model.cfg.d_model
 
     @property
-    def hidden_dim(self) -> int:  # pragma: no cover - stub
-        raise NotImplementedError
+    def hidden_dim(self) -> int:
+        return self._dim
 
-    def hidden_states(self, prompt: str, text: str):  # pragma: no cover - stub
-        raise NotImplementedError
+    def hidden_states(self, role_prompt: str, question: str, answer: str) -> dict[int, np.ndarray]:
+        prefix = _chat_prefix(self.tokenizer, role_prompt, question)
+        prefix_len = self.model.to_tokens(prefix).shape[1]
+        tokens = self.model.to_tokens(prefix + answer)
+        _, cache = self.model.run_with_cache(tokens, return_type=None)
+        out = {}
+        for l in self.cfg.layers:
+            resid = cache["resid_post", l][0]            # (seq, dim)
+            out[l] = _to_numpy(resid[prefix_len:].mean(0))
+        return out
+
+    def generate(self, role_prompt: str, question: str, max_new_tokens: int = 200) -> str:
+        prefix = _chat_prefix(self.tokenizer, role_prompt, question)
+        text = self.model.generate(prefix, max_new_tokens=max_new_tokens, verbose=False)
+        return text[len(prefix):].strip()
 
 
 class NNSightBackend(ActivationBackend):
-    """nnsight backend — supports both extraction and (later) steering injection.
+    """nnsight backend — extraction + steering injection, LOCAL or REMOTE on NDIF.
 
-    Can run LOCALLY or REMOTELY on NDIF (National Deep Inference Fabric, [redacted]/[redacted]):
-    free remote access to large open-weight models incl. Llama-3.1-405B, no local GPU. Pass
-    remote=True to LanguageModel(...).trace(...) and set your NDIF API key.
-
-    INTEGRATION POINT:
-        from nnsight import LanguageModel
-        self.model = LanguageModel(cfg.require_model())
-        with self.model.trace(prompt + text, remote=True):   # remote=True -> runs on NDIF
-            acts = {l: self.model.model.layers[l].output[0].mean(dim=1).save() for l in cfg.layers}
+    Env:
+      ROLEVEC_NDIF_REMOTE=1   run on NDIF (no local GPU; free [redacted] access)
+      NDIF_API_KEY=...        your NDIF key (also settable via nnsight.CONFIG.set_default_api_key)
     """
 
     def __init__(self, cfg: Config):
         super().__init__(cfg)
-        cfg.require_model()
-        raise NotImplementedError(
-            "NNSightBackend is a stub. Install nnsight, set --model, "
-            "and implement hidden_states() at the marked integration point."
-        )
+        from nnsight import LanguageModel  # lazy
+        self.remote = os.environ.get("ROLEVEC_NDIF_REMOTE", "0") == "1"
+        key = os.environ.get("NDIF_API_KEY")
+        if key:
+            try:
+                import nnsight
+                nnsight.CONFIG.set_default_api_key(key)
+            except Exception:
+                pass
+        # device_map only matters for local execution
+        self.model = LanguageModel(cfg.require_model(),
+                                   device_map=None if self.remote else "auto")
+        self.tokenizer = self.model.tokenizer
+        self._dim = self.model.config.hidden_size
 
     @property
-    def hidden_dim(self) -> int:  # pragma: no cover - stub
-        raise NotImplementedError
+    def hidden_dim(self) -> int:
+        return self._dim
 
-    def hidden_states(self, prompt: str, text: str):  # pragma: no cover - stub
-        raise NotImplementedError
+    def _answer_slice(self, role_prompt: str, question: str):
+        prefix = _chat_prefix(self.tokenizer, role_prompt, question)
+        prefix_len = len(self.tokenizer(prefix)["input_ids"])
+        return prefix, prefix_len
+
+    def hidden_states(self, role_prompt: str, question: str, answer: str) -> dict[int, np.ndarray]:
+        prefix, prefix_len = self._answer_slice(role_prompt, question)
+        saved = {}
+        with self.model.trace(prefix + answer, remote=self.remote):
+            for l in self.cfg.layers:
+                hs = self.model.model.layers[l].output[0]      # (1, seq, dim)
+                saved[l] = hs[0, prefix_len:, :].mean(dim=0).save()
+        return {l: _to_numpy(saved[l]) for l in self.cfg.layers}
+
+    def generate(self, role_prompt: str, question: str, max_new_tokens: int = 200) -> str:
+        prefix = _chat_prefix(self.tokenizer, role_prompt, question)
+        in_len = len(self.tokenizer(prefix)["input_ids"])
+        with self.model.generate(prefix, max_new_tokens=max_new_tokens, remote=self.remote):
+            out = self.model.generator.output.save()
+        ids = _to_numpy(out[0]).astype(int).tolist()
+        return self.tokenizer.decode(ids[in_len:], skip_special_tokens=True).strip()
+
+    def generate_steered(self, role_prompt: str, question: str, vector, layer: int,
+                         coeff: float, max_new_tokens: int = 200) -> str:
+        import torch
+        prefix = _chat_prefix(self.tokenizer, role_prompt, question)
+        in_len = len(self.tokenizer(prefix)["input_ids"])
+        vec = torch.as_tensor(np.asarray(vector, dtype=np.float32))
+        with self.model.generate(prefix, max_new_tokens=max_new_tokens, remote=self.remote):
+            # apply the steering vector to this layer's output on every generated forward pass
+            with self.model.model.layers[layer].all():
+                self.model.model.layers[layer].output[0][:] += coeff * vec.to(
+                    self.model.model.layers[layer].output[0].device)
+            out = self.model.generator.output.save()
+        ids = _to_numpy(out[0]).astype(int).tolist()
+        return self.tokenizer.decode(ids[in_len:], skip_special_tokens=True).strip()
 
 
 _BACKENDS = {
@@ -147,7 +198,6 @@ _BACKENDS = {
 
 
 def get_backend(cfg: Config) -> ActivationBackend:
-    try:
-        return _BACKENDS[cfg.backend](cfg)
-    except KeyError:
+    if cfg.backend not in _BACKENDS:
         raise ValueError(f"unknown backend {cfg.backend!r}; choose from {sorted(_BACKENDS)}")
+    return _BACKENDS[cfg.backend](cfg)

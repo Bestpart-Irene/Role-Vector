@@ -56,15 +56,28 @@ class HeuristicJudge(Judge):
 
 
 class LLMJudge(Judge):
-    """Real judge. Implement `_call_model` against your chosen judge model (deferred)."""
+    """Real judge via the Anthropic API (Claude). Model is separate from the extraction model.
+
+    Needs `pip install anthropic` and `ANTHROPIC_API_KEY`. Override the model with `model=` or
+    ROLEVEC_JUDGE_MODEL. Haiku is a good high-volume default if cost matters."""
 
     def __init__(self, model: str | None = None):
-        self.model = model
+        self.model = model or "claude-sonnet-4-6"
+        self._client = None
 
-    def _call_model(self, prompt: str) -> str:  # pragma: no cover - integration point
-        raise NotImplementedError(
-            "Implement _call_model() to query your judge model and return its text reply."
+    def _client_lazy(self):
+        if self._client is None:
+            from anthropic import Anthropic  # lazy: only needed for real judging
+            self._client = Anthropic()
+        return self._client
+
+    def _call_model(self, prompt: str) -> str:
+        msg = self._client_lazy().messages.create(
+            model=self.model,
+            max_tokens=5,
+            messages=[{"role": "user", "content": prompt}],
         )
+        return "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
 
     def score(self, *, role_name, role_prompt, question, answer, in_domain, dimensions) -> int:
         prompt = JUDGE_PROMPT.format(

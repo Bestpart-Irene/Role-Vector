@@ -5,6 +5,9 @@ pyyaml>=6.0
 # Optional extraction backends — install the one matching your chosen model.
 # Model choice is deferred; none of these are required for the dummy backend.
 # transformer-lens>=2.0     # white-box HF models (Llama/Qwen/Gemma)
-# nnsight>=0.3              # extraction + intervention
+# nnsight>=0.3              # extraction + intervention; remote on NDIF
 # torch>=2.2               # required by the above
 # transformers>=4.44       # tokenizer / model loading
+
+# Optional LLM judge (real role-adherence scoring) — separate from the extraction model.
+# anthropic>=0.40          # Claude judge (set ANTHROPIC_API_KEY)

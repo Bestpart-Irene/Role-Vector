@@ -60,8 +60,8 @@ def extract_role_vector(
             in_domain=in_domain, dimensions=dimensions_by_family.get(q.family, []),
         )
         w = weight_for(score)
-        h_role = backend.hidden_states(role.prompt, answer)
-        h_def = backend.hidden_states(baseline.prompt, answer)
+        h_role = backend.hidden_states(role.prompt, q.text, answer)
+        h_def = backend.hidden_states(baseline.prompt, q.text, answer)
         rows.append((in_domain, w, h_role, h_def))
         if in_domain:
             s3_n_in += 1; s3_in += int(score == 3)
