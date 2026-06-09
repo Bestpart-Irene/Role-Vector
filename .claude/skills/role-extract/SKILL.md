@@ -14,7 +14,12 @@ description: Extract prompted role personas into activation-space vectors — ro
 PYTHONPATH=src python -m rolevec.pipeline --backend dummy --runs 30
 # real model later (nothing else changes):
 PYTHONPATH=src python -m rolevec.pipeline --backend nnsight --model meta-llama/Llama-3.1-8B --runs 30
+# any role/question set (Future Work #2/#3/#4 — Big Five personas, trait questions):
+PYTHONPATH=src python -m rolevec.pipeline --roles data/roles_bigfive.yaml --questions data/questions_bigfive.yaml
 ```
+The extractor/judge/metrics are role-set- and question-set-agnostic, so new persona families
+(non-occupational, trait-based, richer prompts) need only new `--roles`/`--questions` data — no code
+change. For the full multi-track run + validation gate, use the `run-all` skill.
 
 ## What it does (Prez slides 24-25)
 1. Every role answers all 90 questions (15 in-domain + 75 OOD).

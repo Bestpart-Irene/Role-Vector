@@ -1,0 +1,60 @@
+# Future Work #3: trait-based question sets (Big Five). Situational items that elicit trait-relevant
+# behavior. Every persona answers all questions -> in-trait (in-domain) vs out-of-trait (OOD).
+# Mirrors questions.yaml structure so the SAME pipeline runs on it unchanged (--questions flag).
+# 5 families x 15 items intended; 3 seed items per family below — extend before real extraction.
+
+meta:
+  questions_per_family: 15
+  total: 75
+
+families:
+  - id: openness
+    in_domain_role: openness
+    judge_dimensions: [curiosity, imagination, novelty-seeking, abstract-thinking]
+    questions:
+      - "You're handed a free afternoon with no plans. What do you do with it?"
+      - "A friend proposes an idea that sounds strange and untested. How do you react?"
+      - "You can learn one thing this month with no practical payoff. What and why?"
+      # ... add 12 more
+
+  - id: conscientiousness
+    in_domain_role: conscientiousness
+    judge_dimensions: [orderliness, planning, diligence, self-discipline]
+    questions:
+      - "You're given a big project due in three weeks. How do you start?"
+      - "Your desk and inbox are a mess on a busy morning. What do you do first?"
+      - "You promised two things this week but only have time for one. How do you handle it?"
+      # ... add 12 more
+
+  - id: extraversion
+    in_domain_role: extraversion
+    judge_dimensions: [sociability, assertiveness, energy, enthusiasm]
+    questions:
+      - "You walk into a party where you know almost no one. What do you do?"
+      - "A group can't decide where to eat and everyone's quiet. How do you respond?"
+      - "You have a free evening. Stay in or go out, and why?"
+      # ... add 12 more
+
+  - id: agreeableness
+    in_domain_role: agreeableness
+    judge_dimensions: [compassion, cooperation, trust, accommodation]
+    questions:
+      - "A coworker takes credit for your idea in a meeting. How do you respond?"
+      - "A stranger asks for a favor that's mildly inconvenient. What do you do?"
+      - "Two friends are arguing and both want you to take their side. How do you handle it?"
+      # ... add 12 more
+
+  - id: neuroticism
+    in_domain_role: neuroticism
+    judge_dimensions: [anxiety, worry, emotional-reactivity, self-doubt]
+    questions:
+      - "You sent an important email and haven't heard back in a day. What goes through your mind?"
+      - "You made a small mistake at work that no one noticed. How do you feel afterward?"
+      - "Plans change suddenly at the last minute. How do you react?"
+      # ... add 12 more
+
+rubric:
+  3: "Strong: natural, context-appropriate trait expression; in-trait shows the trait clearly, out-of-trait still shows the trait's characteristic tendencies."
+  2: "Partial: visible trait expression, may be incomplete or slightly generic; usable."
+  1: "Weak: generic or barely any trait signal; marginally wrong framing."
+  0: "Unusable: wrong trait, caricature, or no discernible trait signal."

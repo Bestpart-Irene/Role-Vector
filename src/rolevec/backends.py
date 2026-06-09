@@ -39,6 +39,11 @@ class ActivationBackend(ABC):
         the default returns a deterministic placeholder so the dummy pipeline is self-contained."""
         return f"[answer:{abs(hash((role_prompt, question))) % 10_000}]"
 
+    def generate_steered(self, prompt: str, question: str, vector, layer: int, coeff: float) -> str:
+        """Future Work #5: generate while adding `coeff * vector` to `layer`'s residual stream.
+        Real backends override (nnsight intervention). Default falls back to unsteered generation."""
+        return self.generate(prompt, question)
+
 
 class DummyBackend(ActivationBackend):
     """Deterministic random activations — for wiring/tests, NOT for real results.
@@ -65,10 +70,14 @@ class DummyBackend(ActivationBackend):
 
     def hidden_states(self, prompt: str, text: str) -> dict[int, np.ndarray]:
         # Stable role/layer signal + small noise -> realistic stability & separability.
-        role_key = prompt
+        # The baseline (default-assistant) center is de-emphasized so that, after role-minus-default
+        # subtraction, the role-specific component dominates and roles come out genuinely separable
+        # (matching the deck's finding that all pairs separate). Purely synthetic — not real signal.
+        is_baseline = (prompt == self.cfg.baseline_prompt)
+        scale = 0.1 if is_baseline else 1.0
         out = {}
         for layer in self.cfg.layers:
-            center = self._center(f"{role_key}|{layer}")
+            center = self._center(f"{prompt}|{layer}") * scale
             noise = self._rng.standard_normal(self._dim) * 0.35
             out[layer] = center + noise
         return out

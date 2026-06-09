@@ -12,6 +12,7 @@ import argparse
 import json
 import shutil
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import yaml
@@ -26,8 +27,9 @@ def band_average(per_layer: dict[int, np.ndarray], layers) -> np.ndarray:
     return np.mean([per_layer[l] for l in layers], axis=0)
 
 
-def run_pipeline(cfg: Config) -> "Path":  # type: ignore[name-defined]
+def run_pipeline(cfg: Config, tag: str = "") -> "Path":  # type: ignore[name-defined]
     baseline, roles = load_roles(cfg.roles_path)
+    cfg.baseline_prompt = baseline.prompt          # dummy backend de-emphasizes this center
     questions = load_questions(cfg.questions_path)
     dims_by_family = {
         f["id"]: f.get("judge_dimensions", [])
@@ -57,7 +59,8 @@ def run_pipeline(cfg: Config) -> "Path":  # type: ignore[name-defined]
             s3_in[role.id].append(rv.score3_rate_in)
             s3_ood[role.id].append(rv.score3_rate_ood)
 
-    out = cfg.runs_dir / datetime.now().strftime("%Y%m%d-%H%M%S")
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    out = cfg.runs_dir / (f"{tag}-{stamp}" if tag else stamp)
     out.mkdir(parents=True, exist_ok=True)
     np.savez(out / "vectors.npz", **arrays)
     meta = {
@@ -86,8 +89,15 @@ def build_config(argv=None) -> Config:
     p.add_argument("--model", default=None, help="HF model id (required for non-dummy backends)")
     p.add_argument("--runs", type=int, default=30)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--roles", default=None, help="path to a roles.yaml (default: data/roles.yaml)")
+    p.add_argument("--questions", default=None, help="path to a questions.yaml (default: data/questions.yaml)")
     a = p.parse_args(argv)
-    return Config(backend=a.backend, model=a.model, runs=a.runs, seed=a.seed)
+    cfg = Config(backend=a.backend, model=a.model, runs=a.runs, seed=a.seed)
+    if a.roles:
+        cfg.roles_path = Path(a.roles)
+    if a.questions:
+        cfg.questions_path = Path(a.questions)
+    return cfg
 
 
 if __name__ == "__main__":

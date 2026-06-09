@@ -41,9 +41,21 @@ heterogeneous personas plus two deliberate close contrasts. See `data/roles.yaml
 
 ## Repo layout
 - `src/rolevec/` — core library. `backends.py` is **model-agnostic**: a `DummyBackend` runs the whole
-  pipeline today (random activations); plug in `TransformerLens`/`nnsight`/HF later by setting a config flag.
-- `.claude/skills/` — `lit-scan`, `role-extract`, `role-judge`, `vector-metrics`, `paper-draft`.
-- `data/` — `roles.yaml`, `questions.yaml`. `docs/auto-research-survey.md` — external-ecosystem survey.
+  pipeline today (synthetic activations); plug in `TransformerLens`/`nnsight`/HF later by setting a config flag.
+  `steer.py` = Future Work #5 injection+persistence; `run_all.py` = one-command multi-track run + validation gate.
+- `.claude/skills/` — `lit-scan`, `role-extract`, `role-judge`, `vector-metrics`, `paper-draft`,
+  `steer-inject` (#5), `run-all` (full pipeline + gate).
+- `data/` — `roles.yaml`/`questions.yaml` (occupational); `roles_bigfive.yaml`/`questions_bigfive.yaml`
+  (Future Work #2/#3/#4 persona track). `docs/auto-research-survey.md` (survey), `docs/future-work.md` (roadmap).
+
+## Run everything (with validation gate)
+```bash
+PYTHONPATH=src python -m rolevec.run_all --quick      # all 5 future-work tracks, self-validating
+```
+Tracks: occupational · cross-model replication (#1) · Big Five personas (#2/#3/#4) · steering
+persistence (#5). Writes `runs/report.md`; exits non-zero if any required check fails.
+**Dummy numbers are synthetic** (the dummy backend de-emphasizes the baseline center so roles come
+out separable, matching the deck) — they verify the *plumbing + validation*, not real model behavior.
 
 ## Conventions
 - **Model choice is deferred.** Never hard-code a model id; read `config.MODEL` / `--model`. Default backend is `dummy`.

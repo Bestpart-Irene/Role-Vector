@@ -24,6 +24,7 @@ SCORE_WEIGHTS = {0: 0, 1: 0, 2: 2, 3: 3}
 class Config:
     backend: str = "dummy"                 # dummy | transformer_lens | nnsight | hf
     model: str | None = field(default_factory=lambda: os.environ.get("ROLEVEC_MODEL"))
+    baseline_prompt: str | None = None     # set by the pipeline; dummy backend de-emphasizes it
     layers: tuple[int, ...] = ANALYSIS_LAYERS
     runs: int = 30                         # repeated extractions for stability (Q3)
     hidden_dim: int = 256                  # dummy backend only; real backends infer from model
