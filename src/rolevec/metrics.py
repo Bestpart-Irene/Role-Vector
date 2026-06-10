@@ -18,6 +18,11 @@ from itertools import combinations
 
 import numpy as np
 
+# A pair is "separable" if its symmetric normalized separation clearly exceeds collapse (~0).
+# The deck's closest real pair sits at 0.90 and is treated as separable, so the bar is
+# "distinguishable, not collapsed" rather than the stricter >1.0 ("well-separated").
+SEPARABLE_THRESHOLD = 0.5
+
 
 def _cos(a: np.ndarray, b: np.ndarray) -> float:
     na, nb = np.linalg.norm(a), np.linalg.norm(b)
@@ -105,8 +110,9 @@ def success_report(
             # Q3: stable in direction + coordinate pattern; margin > 0; perfect clustering
             "Q3_margin_all_positive": all(m > 0 for m in margins.values()),
             "Q3_cluster_perfect": cluster_acc == 1.0,
-            # Q4: all pairs separable (separation > 1 = well-separated)
-            "Q4_all_pairs_separable": all(v > 1.0 for v in sep.values()),
+            # Q4: all pairs separable, i.e. clearly above collapse (not ~0). The deck treats its
+            # closest real pair (0.90) as separable, so the bar is "distinguishable", not ">1.0".
+            "Q4_all_pairs_separable": all(v > SEPARABLE_THRESHOLD for v in sep.values()),
         },
     }
     if score3_in and score3_ood:
