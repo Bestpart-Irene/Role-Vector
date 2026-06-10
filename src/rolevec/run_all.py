@@ -79,8 +79,10 @@ def main(argv=None) -> int:
     # ---- Steering injection persistence (#5) ----
     print("\n### Steering — injection persistence (#5)")
     _, occ_roles = load_roles(DATA_DIR / "roles.yaml")
+    # Steering persistence is SIMULATED here (placeholder until real nnsight injection, Future Work #5).
+    # Extraction metrics (Q1/Q3/Q4) above are real; this step just exercises the persistence machinery.
     steer_results = [
-        evaluate_persistence(role_id=r.id, turns=9, coeff=8.0, simulate=(a.backend == "dummy"))
+        evaluate_persistence(role_id=r.id, turns=9, coeff=8.0, simulate=True)
         for r in occ_roles
     ]
     for r, sr in zip(occ_roles, steer_results):
