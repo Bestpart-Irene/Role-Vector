@@ -29,8 +29,10 @@ from .pipeline import run_pipeline
 from .steer import evaluate_persistence
 
 
-def _run_track(tag, roles_file, questions_file, *, backend, model, runs, seed, construction):
-    cfg = Config(backend=backend, model=model, runs=runs, seed=seed)
+def _run_track(tag, roles_file, questions_file, *, backend, model, runs, seed, construction,
+               max_new_tokens=200, max_questions=None):
+    cfg = Config(backend=backend, model=model, runs=runs, seed=seed,
+                 max_new_tokens=max_new_tokens, max_questions_per_family=max_questions)
     cfg.roles_path = DATA_DIR / roles_file
     cfg.questions_path = DATA_DIR / questions_file
     out = run_pipeline(cfg, tag=tag)
@@ -51,9 +53,12 @@ def main(argv=None) -> int:
     p.add_argument("--runs", type=int, default=30)
     p.add_argument("--construction", default="balanced", choices=["raw", "rmd", "balanced"])
     p.add_argument("--quick", action="store_true", help="smaller runs for a fast smoke test")
+    p.add_argument("--max-new-tokens", type=int, default=200, help="answer length (lower = faster)")
+    p.add_argument("--max-questions", type=int, default=None, help="questions per family (subsample for smoke)")
     a = p.parse_args(argv)
     runs = 8 if a.quick else a.runs
-    common = dict(backend=a.backend, model=a.model, runs=runs, construction=a.construction)
+    common = dict(backend=a.backend, model=a.model, runs=runs, construction=a.construction,
+                  max_new_tokens=a.max_new_tokens, max_questions=a.max_questions)
 
     results = {}        # track -> (out, meta, rep)
     required_checks = []  # (label, bool)

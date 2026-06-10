@@ -117,10 +117,11 @@ class TransformerLensBackend(ActivationBackend):
             out[l] = _to_numpy(resid[prefix_len:].mean(0))
         return out
 
-    def generate(self, role_prompt: str, question: str, max_new_tokens: int = 200) -> str:
+    def generate(self, role_prompt: str, question: str, max_new_tokens: int | None = None) -> str:
         # Sample (not greedy) so repeated extractions vary -> Q3 stability is a real test, not 1.0.
+        n = max_new_tokens or self.cfg.max_new_tokens
         prefix = _chat_prefix(self.tokenizer, role_prompt, question)
-        text = self.model.generate(prefix, max_new_tokens=max_new_tokens, verbose=False,
+        text = self.model.generate(prefix, max_new_tokens=n, verbose=False,
                                    do_sample=True, temperature=1.0, top_p=0.95)
         return text[len(prefix):].strip()
 
@@ -168,22 +169,24 @@ class NNSightBackend(ActivationBackend):
                 saved[l] = hs[0, prefix_len:, :].mean(dim=0).save()
         return {l: _to_numpy(saved[l]) for l in self.cfg.layers}
 
-    def generate(self, role_prompt: str, question: str, max_new_tokens: int = 200) -> str:
+    def generate(self, role_prompt: str, question: str, max_new_tokens: int | None = None) -> str:
+        n = max_new_tokens or self.cfg.max_new_tokens
         prefix = _chat_prefix(self.tokenizer, role_prompt, question)
         in_len = len(self.tokenizer(prefix)["input_ids"])
-        with self.model.generate(prefix, max_new_tokens=max_new_tokens, remote=self.remote,
+        with self.model.generate(prefix, max_new_tokens=n, remote=self.remote,
                                  do_sample=True, temperature=1.0, top_p=0.95):
             out = self.model.generator.output.save()
         ids = _to_numpy(out[0]).astype(int).tolist()
         return self.tokenizer.decode(ids[in_len:], skip_special_tokens=True).strip()
 
     def generate_steered(self, role_prompt: str, question: str, vector, layer: int,
-                         coeff: float, max_new_tokens: int = 200) -> str:
+                         coeff: float, max_new_tokens: int | None = None) -> str:
         import torch
+        n = max_new_tokens or self.cfg.max_new_tokens
         prefix = _chat_prefix(self.tokenizer, role_prompt, question)
         in_len = len(self.tokenizer(prefix)["input_ids"])
         vec = torch.as_tensor(np.asarray(vector, dtype=np.float32))
-        with self.model.generate(prefix, max_new_tokens=max_new_tokens, remote=self.remote):
+        with self.model.generate(prefix, max_new_tokens=n, remote=self.remote):
             # apply the steering vector to this layer's output on every generated forward pass
             with self.model.model.layers[layer].all():
                 self.model.model.layers[layer].output[0][:] += coeff * vec.to(

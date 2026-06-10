@@ -33,6 +33,8 @@ class Config:
     baseline_prompt: str | None = None     # set by the pipeline; dummy backend de-emphasizes it
     layers: tuple[int, ...] = ANALYSIS_LAYERS
     runs: int = 30                         # repeated extractions for stability (Q3)
+    max_new_tokens: int = 200              # answer length per generation (lower = faster smoke)
+    max_questions_per_family: int | None = None  # subsample questions for fast smoke (None = all)
     hidden_dim: int = 256                  # dummy backend only; real backends infer from model
     seed: int = 0
     roles_path: Path = DATA_DIR / "roles.yaml"

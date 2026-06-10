@@ -31,6 +31,12 @@ def run_pipeline(cfg: Config, tag: str = "") -> "Path":  # type: ignore[name-def
     baseline, roles = load_roles(cfg.roles_path)
     cfg.baseline_prompt = baseline.prompt          # dummy backend de-emphasizes this center
     questions = load_questions(cfg.questions_path)
+    if cfg.max_questions_per_family:               # fast-smoke subsample
+        from collections import defaultdict
+        by_fam: dict[str, list] = defaultdict(list)
+        for q in questions:
+            by_fam[q.family].append(q)
+        questions = [q for fam in by_fam.values() for q in fam[:cfg.max_questions_per_family]]
     dims_by_family = {
         f["id"]: f.get("judge_dimensions", [])
         for f in yaml.safe_load(cfg.questions_path.read_text())["families"]

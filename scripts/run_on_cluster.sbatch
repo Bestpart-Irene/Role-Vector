@@ -58,7 +58,10 @@ cd "$REPO"
 mkdir -p logs
 
 # ---- run: full roadmap + validation gate on a real model ----
+# MAX_NEW_TOKENS / MAX_QUESTIONS (optional env) shrink generation for a fast smoke.
 PYTHONPATH=src python -m rolevec.run_all \
-    --backend transformer_lens --model "$MODEL" --runs "$RUNS"
+    --backend transformer_lens --model "$MODEL" --runs "$RUNS" \
+    ${MAX_NEW_TOKENS:+--max-new-tokens "$MAX_NEW_TOKENS"} \
+    ${MAX_QUESTIONS:+--max-questions "$MAX_QUESTIONS"}
 
 echo "==== done @ $(date) — see runs/report.md ===="
