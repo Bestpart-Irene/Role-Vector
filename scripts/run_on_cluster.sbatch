@@ -23,7 +23,8 @@
 set -euo pipefail
 
 # ---- config (edit these) ----
-REPO="/home/user/Role-Vector"
+# Everything lives on /scratch (big quota); /home is too small for repo + runs + caches.
+REPO="/scratch/user/Role-Vector"
 ENV_PREFIX="/scratch/user/conda_envs/rolevec"
 CONDA_SH="/path/to/miniconda3/etc/profile.d/conda.sh"
 MODEL="${ROLEVEC_MODEL:-Qwen/Qwen2.5-1.5B}"   # start small; scale up after a --runs 1 sanity check
@@ -43,9 +44,11 @@ else
   conda activate "$ENV_PREFIX"
 fi
 
-# ---- caches ----
+# ---- caches (all on /scratch — keep /home empty) ----
 export HF_HOME="/scratch/user/hf_cache"
 export HF_DATASETS_CACHE="/scratch/user/hf_cache/datasets"
+export PIP_CACHE_DIR="/scratch/user/pip_cache"
+export XDG_CACHE_HOME="/scratch/user/.cache"
 export PYTHONUNBUFFERED=1
 # Judge: FREE open-weight by default (no API key). Override via env if desired.
 export ROLEVEC_JUDGE_BACKEND="${ROLEVEC_JUDGE_BACKEND:-local}"

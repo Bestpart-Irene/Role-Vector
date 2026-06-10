@@ -35,7 +35,6 @@ def run_pipeline(cfg: Config, tag: str = "") -> "Path":  # type: ignore[name-def
         f["id"]: f.get("judge_dimensions", [])
         for f in yaml.safe_load(cfg.questions_path.read_text())["families"]
     }
-    backend = get_backend(cfg)
     from .judge import HeuristicJudge, LLMJudge, LocalJudge
     if cfg.backend == "dummy" or cfg.judge_backend == "heuristic":
         judge = HeuristicJudge()
