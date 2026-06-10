@@ -10,3 +10,6 @@ logs/
 *.npz
 *.npy
 .ipynb_checkpoints/
+
+# unpublished slides — keep out of git
+*.pdf
