@@ -38,16 +38,18 @@ if [ ! -d "$ENV_PREFIX" ]; then
   conda create --prefix "$ENV_PREFIX" python=3.11 -y
   conda activate "$ENV_PREFIX"
   pip install -e "$REPO"                  # rolevec + numpy/pyyaml
-  pip install "transformer-lens>=2.0" "torch>=2.2" transformers anthropic
+  pip install "transformer-lens>=2.0" "torch>=2.2" transformers   # extraction + FREE local judge
 else
   conda activate "$ENV_PREFIX"
 fi
 
-# ---- caches + secrets (set HF_TOKEN / ANTHROPIC_API_KEY in your ~/.bashrc, NOT in git) ----
+# ---- caches ----
 export HF_HOME="/scratch/user/hf_cache"
 export HF_DATASETS_CACHE="/scratch/user/hf_cache/datasets"
 export PYTHONUNBUFFERED=1
-: "${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY for the judge (export in ~/.bashrc)}"
+# Judge: FREE open-weight by default (no API key). Override via env if desired.
+export ROLEVEC_JUDGE_BACKEND="${ROLEVEC_JUDGE_BACKEND:-local}"
+export ROLEVEC_JUDGE_MODEL="${ROLEVEC_JUDGE_MODEL:-Qwen/Qwen2.5-7B-Instruct}"
 
 cd "$REPO"
 mkdir -p logs
