@@ -5,6 +5,7 @@ venv/
 .env
 .DS_Store
 runs/
+logs/
 *.pt
 *.npz
 *.npy

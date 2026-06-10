@@ -32,6 +32,20 @@ PYTHONPATH=src python -m rolevec.pipeline --backend transformer_lens --model Qwe
 ```
 `TransformerLensBackend` uses `run_with_cache` and pools `resid_post` over the answer tokens.
 
+## Cluster route — SLURM cluster (GPU, TransformerLens)
+SSH is already configured on this machine as the alias **`cluster`** (reused from the
+Reinforcement-Casino project) — there is **no SSH key to copy**. Account `user`,
+scratch `/scratch/user/`, conda base `/path/to/conda/...`, partition `gpu`.
+```bash
+ssh cluster
+git clone <this repo> /home/user/Role-Vector
+cd /home/user/Role-Vector
+# put HF_TOKEN + ANTHROPIC_API_KEY in ~/.bashrc (never in git)
+sbatch scripts/run_on_cluster.sbatch          # creates the env on first run, then runs the roadmap
+```
+NDIF (remote) and cluster (local GPU) are **independent routes** — NDIF needs no cluster; the
+cluster needs no NDIF key. Pick one.
+
 ## The judge (real role-adherence scoring)
 `LLMJudge` calls the Anthropic API and is **separate from the extraction model** (no self-grading).
 ```bash
