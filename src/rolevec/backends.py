@@ -118,8 +118,10 @@ class TransformerLensBackend(ActivationBackend):
         return out
 
     def generate(self, role_prompt: str, question: str, max_new_tokens: int = 200) -> str:
+        # Sample (not greedy) so repeated extractions vary -> Q3 stability is a real test, not 1.0.
         prefix = _chat_prefix(self.tokenizer, role_prompt, question)
-        text = self.model.generate(prefix, max_new_tokens=max_new_tokens, verbose=False)
+        text = self.model.generate(prefix, max_new_tokens=max_new_tokens, verbose=False,
+                                   do_sample=True, temperature=1.0, top_p=0.95)
         return text[len(prefix):].strip()
 
 
@@ -169,7 +171,8 @@ class NNSightBackend(ActivationBackend):
     def generate(self, role_prompt: str, question: str, max_new_tokens: int = 200) -> str:
         prefix = _chat_prefix(self.tokenizer, role_prompt, question)
         in_len = len(self.tokenizer(prefix)["input_ids"])
-        with self.model.generate(prefix, max_new_tokens=max_new_tokens, remote=self.remote):
+        with self.model.generate(prefix, max_new_tokens=max_new_tokens, remote=self.remote,
+                                 do_sample=True, temperature=1.0, top_p=0.95):
             out = self.model.generator.output.save()
         ids = _to_numpy(out[0]).astype(int).tolist()
         return self.tokenizer.decode(ids[in_len:], skip_special_tokens=True).strip()

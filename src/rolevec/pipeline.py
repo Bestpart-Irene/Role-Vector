@@ -47,12 +47,15 @@ def run_pipeline(cfg: Config, tag: str = "") -> "Path":  # type: ignore[name-def
     print(f"backend={cfg.backend} model={cfg.require_model()} "
           f"roles={len(roles)} questions={len(questions)} runs={cfg.runs}")
 
+    # Load the backend (and its model) ONCE and reuse across runs. Reloading per run reloads the
+    # whole model from disk every time — fine for the dummy backend, crippling for a real GPU model.
+    # Run-to-run variation comes from sampled generation, not from reseeding the backend.
+    backend = get_backend(cfg)
+
     arrays: dict[str, np.ndarray] = {}
     s3_in: dict[str, list[float]] = {r.id: [] for r in roles}
     s3_ood: dict[str, list[float]] = {r.id: [] for r in roles}
     for run in range(cfg.runs):
-        rcfg = Config(**{**cfg.__dict__, "seed": cfg.seed + run})
-        backend = get_backend(rcfg)
         for role in roles:
             rv = extract_role_vector(
                 backend=backend, judge=judge, role=role, baseline=baseline,
