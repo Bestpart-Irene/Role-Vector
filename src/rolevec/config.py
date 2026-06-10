@@ -24,10 +24,12 @@ SCORE_WEIGHTS = {0: 0, 1: 0, 2: 2, 3: 3}
 class Config:
     backend: str = "dummy"                 # dummy | transformer_lens | nnsight | hf
     model: str | None = field(default_factory=lambda: os.environ.get("ROLEVEC_MODEL"))
-    # Judge model is SEPARATE from the extraction model (avoid self-grading bias). Defaults to a
-    # Claude model; override via --judge-model or ROLEVEC_JUDGE_MODEL.
-    judge_model: str = field(
-        default_factory=lambda: os.environ.get("ROLEVEC_JUDGE_MODEL", "claude-sonnet-4-6"))
+    # Judge is SEPARATE from the extraction model (avoid self-grading bias).
+    #   judge_backend: local (FREE, open-weight via transformers) | anthropic (paid Claude) | heuristic
+    #   judge_model:   resolved per backend if left None (local->Qwen instruct, anthropic->Haiku)
+    judge_backend: str = field(
+        default_factory=lambda: os.environ.get("ROLEVEC_JUDGE_BACKEND", "local"))
+    judge_model: str | None = field(default_factory=lambda: os.environ.get("ROLEVEC_JUDGE_MODEL"))
     baseline_prompt: str | None = None     # set by the pipeline; dummy backend de-emphasizes it
     layers: tuple[int, ...] = ANALYSIS_LAYERS
     runs: int = 30                         # repeated extractions for stability (Q3)

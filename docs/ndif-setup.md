@@ -46,14 +46,23 @@ sbatch scripts/run_on_cluster.sbatch          # creates the env on first run, th
 NDIF (remote) and cluster (local GPU) are **independent routes** — NDIF needs no cluster; the
 cluster needs no NDIF key. Pick one.
 
-## The judge (real role-adherence scoring)
-`LLMJudge` calls the Anthropic API and is **separate from the extraction model** (no self-grading).
-```bash
-pip install anthropic
-export ANTHROPIC_API_KEY=<key>
-export ROLEVEC_JUDGE_MODEL=claude-haiku-4-5-20251001   # cheap for high-volume; or claude-sonnet-4-6
-```
-With a real judge, the Q1 domain-sensitivity checks become *required* in the validation gate
+## The judge (real role-adherence scoring) — **FREE by default**
+The judge is **separate from the extraction model** (no self-grading) and is pluggable:
+
+- **`local` (default, FREE):** `LocalJudge` runs an open-weight instruct model via HF transformers —
+  no API key, no per-token cost. Runs on your cluster GPU.
+  ```bash
+  pip install transformers torch
+  export ROLEVEC_JUDGE_BACKEND=local
+  export ROLEVEC_JUDGE_MODEL=Qwen/Qwen2.5-7B-Instruct   # any HF instruct model
+  ```
+- **`anthropic` (paid):** `LLMJudge` calls the Claude API.
+  ```bash
+  pip install anthropic
+  export ROLEVEC_JUDGE_BACKEND=anthropic ANTHROPIC_API_KEY=<key> ROLEVEC_JUDGE_MODEL=claude-haiku-4-5
+  ```
+
+With any real judge, the Q1 domain-sensitivity checks become *required* in the validation gate
 (under the dummy heuristic judge they are reported-only).
 
 ## Sanity checklist before a full 30-run job

@@ -36,8 +36,13 @@ def run_pipeline(cfg: Config, tag: str = "") -> "Path":  # type: ignore[name-def
         for f in yaml.safe_load(cfg.questions_path.read_text())["families"]
     }
     backend = get_backend(cfg)
-    from .judge import HeuristicJudge, LLMJudge
-    judge = HeuristicJudge() if cfg.backend == "dummy" else LLMJudge(cfg.judge_model)
+    from .judge import HeuristicJudge, LLMJudge, LocalJudge
+    if cfg.backend == "dummy" or cfg.judge_backend == "heuristic":
+        judge = HeuristicJudge()
+    elif cfg.judge_backend == "anthropic":
+        judge = LLMJudge(cfg.judge_model)           # paid Claude
+    else:
+        judge = LocalJudge(cfg.judge_model)         # FREE open-weight (default)
 
     print(f"backend={cfg.backend} model={cfg.require_model()} "
           f"roles={len(roles)} questions={len(questions)} runs={cfg.runs}")
@@ -87,13 +92,17 @@ def build_config(argv=None) -> Config:
     p.add_argument("--backend", default="dummy",
                    choices=["dummy", "transformer_lens", "nnsight"])
     p.add_argument("--model", default=None, help="HF model id (required for non-dummy backends)")
-    p.add_argument("--judge-model", default=None, help="judge model id (default: Claude / ROLEVEC_JUDGE_MODEL)")
+    p.add_argument("--judge-backend", default=None, choices=["local", "anthropic", "heuristic"],
+                   help="local=FREE open-weight (default) | anthropic=paid Claude | heuristic")
+    p.add_argument("--judge-model", default=None, help="judge model id (ROLEVEC_JUDGE_MODEL)")
     p.add_argument("--runs", type=int, default=30)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--roles", default=None, help="path to a roles.yaml (default: data/roles.yaml)")
     p.add_argument("--questions", default=None, help="path to a questions.yaml (default: data/questions.yaml)")
     a = p.parse_args(argv)
     cfg = Config(backend=a.backend, model=a.model, runs=a.runs, seed=a.seed)
+    if a.judge_backend:
+        cfg.judge_backend = a.judge_backend
     if a.judge_model:
         cfg.judge_model = a.judge_model
     if a.roles:

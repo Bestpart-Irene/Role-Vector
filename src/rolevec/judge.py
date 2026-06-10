@@ -3,8 +3,11 @@
 The judge filters generic helpfulness, wrong-role drift, and over-forced role-play. Scores map to
 vector weights via the score-2-plus policy (config.SCORE_WEIGHTS): 3->3, 2->2, 0/1->0 (excluded).
 
-`Judge` is model-agnostic. `HeuristicJudge` runs offline for wiring/tests. `LLMJudge` is the real
-one: implement `_call_model` against your chosen judge model (deferred).
+Three judges, all model-agnostic at the interface:
+  HeuristicJudge  offline, deterministic — wiring/tests only (used by the dummy backend).
+  LocalJudge      FREE open-weight judge via HF transformers (runs on your GPU / SLURM cluster).
+  LLMJudge        Claude via the Anthropic API (needs ANTHROPIC_API_KEY; paid).
+Keep the judge model SEPARATE from the extraction model to avoid self-grading bias.
 """
 from __future__ import annotations
 
@@ -55,29 +58,12 @@ class HeuristicJudge(Judge):
         return 3 if base > 0.75 else 2 if base > 0.45 else 1 if base > 0.2 else 0
 
 
-class LLMJudge(Judge):
-    """Real judge via the Anthropic API (Claude). Model is separate from the extraction model.
+class PromptJudge(Judge):
+    """Shared 0-3 scoring: build the rubric prompt, call a model, parse the integer.
+    Subclasses implement `_call_model(prompt) -> text`."""
 
-    Needs `pip install anthropic` and `ANTHROPIC_API_KEY`. Override the model with `model=` or
-    ROLEVEC_JUDGE_MODEL. Haiku is a good high-volume default if cost matters."""
-
-    def __init__(self, model: str | None = None):
-        self.model = model or "claude-sonnet-4-6"
-        self._client = None
-
-    def _client_lazy(self):
-        if self._client is None:
-            from anthropic import Anthropic  # lazy: only needed for real judging
-            self._client = Anthropic()
-        return self._client
-
-    def _call_model(self, prompt: str) -> str:
-        msg = self._client_lazy().messages.create(
-            model=self.model,
-            max_tokens=5,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
+    @abstractmethod
+    def _call_model(self, prompt: str) -> str: ...
 
     def score(self, *, role_name, role_prompt, question, answer, in_domain, dimensions) -> int:
         prompt = JUDGE_PROMPT.format(
@@ -90,3 +76,52 @@ class LLMJudge(Judge):
         reply = self._call_model(prompt)
         m = re.search(r"[0-3]", reply)
         return int(m.group()) if m else 0
+
+
+class LocalJudge(PromptJudge):
+    """FREE open-weight judge via HF transformers — no API key, runs on your GPU / SLURM cluster.
+
+    Default model is a small instruct model; override with `model=` or ROLEVEC_JUDGE_MODEL. Greedy
+    decode, a handful of tokens (we only need the score)."""
+
+    def __init__(self, model: str | None = None, max_new_tokens: int = 4):
+        self.model_id = model or "Qwen/Qwen2.5-7B-Instruct"
+        self.max_new_tokens = max_new_tokens
+        self._pipe = None
+
+    def _pipe_lazy(self):
+        if self._pipe is None:
+            from transformers import pipeline  # lazy: only needed for real judging
+            self._pipe = pipeline(
+                "text-generation", model=self.model_id, torch_dtype="auto", device_map="auto",
+            )
+        return self._pipe
+
+    def _call_model(self, prompt: str) -> str:
+        out = self._pipe_lazy()(
+            [{"role": "user", "content": prompt}],
+            max_new_tokens=self.max_new_tokens, do_sample=False, return_full_text=False,
+        )
+        return out[0]["generated_text"]
+
+
+class LLMJudge(PromptJudge):
+    """Claude via the Anthropic API. Needs `pip install anthropic` + ANTHROPIC_API_KEY. Paid.
+    Override the model with `model=` or ROLEVEC_JUDGE_MODEL (Haiku is the cheap high-volume default)."""
+
+    def __init__(self, model: str | None = None):
+        self.model = model or "claude-haiku-4-5"
+        self._client = None
+
+    def _client_lazy(self):
+        if self._client is None:
+            from anthropic import Anthropic  # lazy
+            self._client = Anthropic()
+        return self._client
+
+    def _call_model(self, prompt: str) -> str:
+        msg = self._client_lazy().messages.create(
+            model=self.model, max_tokens=5,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")

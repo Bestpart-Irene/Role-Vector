@@ -19,12 +19,16 @@ description: Apply the domain-aware 0-3 role-adherence rubric to model answers �
 Generic traits (clarity, safety, escalation) only count when expressed through the role's
 characteristic habits — never as generic-assistant behavior.
 
-## How
-- Implementation: `src/rolevec/judge.py`. `HeuristicJudge` (offline, for wiring) vs `LLMJudge` (real).
-- To go live: implement `LLMJudge._call_model` against your judge model (deferred choice) — it returns
-  just the integer score. Prompt template is `JUDGE_PROMPT`, already domain- and dimension-aware.
-- Score distributions per (role × family) are quality control: if in-domain isn't skewing high, the
-  questions/rubric for that family are misaligned — fix before trusting the vectors.
+## How (`src/rolevec/judge.py`)
+Three pluggable judges, selected by `--judge-backend` / `ROLEVEC_JUDGE_BACKEND`:
+- **`local` (default, FREE):** `LocalJudge` — open-weight instruct model via HF transformers, no API
+  key, runs on cluster GPU. `ROLEVEC_JUDGE_MODEL=Qwen/Qwen2.5-7B-Instruct` (any HF instruct model).
+- **`anthropic` (paid):** `LLMJudge` — Claude API; set `ANTHROPIC_API_KEY`, model `claude-haiku-4-5`.
+- **`heuristic`:** offline deterministic, wiring/tests only (auto-used by the dummy backend).
+
+`LocalJudge`/`LLMJudge` share `PromptJudge.score` (builds the rubric prompt, parses the 0-3 integer).
+Score distributions per (role × family) are quality control: if in-domain isn't skewing high, the
+questions/rubric for that family are misaligned — fix before trusting the vectors.
 
 ## Guardrails
 - Score ROLE expression, not answer quality. A correct-but-generic answer is a 1, not a 3.
