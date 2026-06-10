@@ -24,6 +24,16 @@ on persona vectors", "is X already covered?", "update the survey", "who's neares
 A markdown table — `| Work | Source/URL | Method (1 line) | Sub-Q | Note vs ours |` — followed by a
 2-3 sentence "positioning" paragraph. Offer to write it into `docs/auto-research-survey.md`.
 
+## Push to the shared Zotero group (optional)
+If `ZOTERO_API_KEY` + `ZOTERO_GROUP_ID` are set (see `docs/zotero-setup.md`), offer to file the found
+papers into the team's shared library so the whole team's reading list accumulates in one place:
+```python
+from rolevec.zotero import add_papers
+add_papers([{ "title": ..., "arxiv": ..., "url": ..., "authors": [...] }, ...])
+```
+Teammates' shared papers are visible via `python -m rolevec.zotero list`; export `refs.bib` for the
+paper with `python -m rolevec.zotero export`.
+
 ## Guardrails
 - Output plausibility ≠ validation: tag whether a paper validates at output level or activation level.
 - No raw link dumps; every link gets a method + sub-question mapping.
