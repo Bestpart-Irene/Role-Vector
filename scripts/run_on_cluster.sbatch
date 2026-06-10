@@ -27,8 +27,9 @@ set -euo pipefail
 REPO="/scratch/user/Role-Vector"
 ENV_PREFIX="/scratch/user/conda_envs/rolevec"
 CONDA_SH="/path/to/miniconda3/etc/profile.d/conda.sh"
-MODEL="${ROLEVEC_MODEL:-Qwen/Qwen2.5-1.5B}"   # start small; scale up after a --runs 1 sanity check
+MODEL="${ROLEVEC_MODEL:-Qwen/Qwen2.5-1.5B-Instruct}"   # Instruct model (base models can't role-play)
 RUNS="${RUNS:-30}"
+BACKEND="${BACKEND:-hf}"                        # hf = batched generation (fast, model-agnostic)
 
 echo "==== rolevec job $SLURM_JOB_ID on $SLURMD_NODENAME @ $(date) ===="
 
@@ -60,7 +61,7 @@ mkdir -p logs
 # ---- run: full roadmap + validation gate on a real model ----
 # MAX_NEW_TOKENS / MAX_QUESTIONS (optional env) shrink generation for a fast smoke.
 PYTHONPATH=src python -m rolevec.run_all \
-    --backend transformer_lens --model "$MODEL" --runs "$RUNS" \
+    --backend "$BACKEND" --model "$MODEL" --runs "$RUNS" \
     ${MAX_NEW_TOKENS:+--max-new-tokens "$MAX_NEW_TOKENS"} \
     ${MAX_QUESTIONS:+--max-questions "$MAX_QUESTIONS"}
 

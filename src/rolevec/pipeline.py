@@ -98,7 +98,7 @@ def run_pipeline(cfg: Config, tag: str = "") -> "Path":  # type: ignore[name-def
 def build_config(argv=None) -> Config:
     p = argparse.ArgumentParser(description="Extract role vectors.")
     p.add_argument("--backend", default="dummy",
-                   choices=["dummy", "transformer_lens", "nnsight"])
+                   choices=["dummy", "hf", "transformer_lens", "nnsight"])
     p.add_argument("--model", default=None, help="HF model id (required for non-dummy backends)")
     p.add_argument("--judge-backend", default=None, choices=["local", "anthropic", "heuristic"],
                    help="local=FREE open-weight (default) | anthropic=paid Claude | heuristic")

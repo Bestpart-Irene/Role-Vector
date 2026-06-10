@@ -49,20 +49,26 @@ def extract_role_vector(
     dim = backend.hidden_dim
     layers = list(backend.cfg.layers)
 
-    # collect per-question: weight, in_domain flag, and per-layer (h_role, d=h_role-h_default)
+    # 1) generate all answers for this role in ONE batched call (the bottleneck — batch it).
+    qtexts = [q.text for q in questions]
+    answers = backend.generate_batch(role.prompt, qtexts)
+
+    # 2) judge all answers in one batch.
+    in_flags = [q.in_domain_role == role.id for q in questions]
+    items = [dict(role_name=role.name, role_prompt=role.prompt, question=q.text, answer=a,
+                  in_domain=ind, dimensions=dimensions_by_family.get(q.family, []))
+             for q, a, ind in zip(questions, answers, in_flags)]
+    scores = judge.score_batch(items)
+
+    # 3) extract activations for (role, answer) and (default, answer), batched.
+    qa = list(zip(qtexts, answers))
+    h_role_all = backend.hidden_states_batch(role.prompt, qa)
+    h_def_all = backend.hidden_states_batch(baseline.prompt, qa)
+
     rows = []
     s3_in = s3_n_in = s3_ood = s3_n_ood = 0
-    for q in questions:
-        answer = backend.generate(role.prompt, q.text)
-        in_domain = (q.in_domain_role == role.id)
-        score = judge.score(
-            role_name=role.name, role_prompt=role.prompt, question=q.text, answer=answer,
-            in_domain=in_domain, dimensions=dimensions_by_family.get(q.family, []),
-        )
-        w = weight_for(score)
-        h_role = backend.hidden_states(role.prompt, q.text, answer)
-        h_def = backend.hidden_states(baseline.prompt, q.text, answer)
-        rows.append((in_domain, w, h_role, h_def))
+    for in_domain, score, h_role, h_def in zip(in_flags, scores, h_role_all, h_def_all):
+        rows.append((in_domain, weight_for(score), h_role, h_def))
         if in_domain:
             s3_n_in += 1; s3_in += int(score == 3)
         else:

@@ -55,6 +55,16 @@ class ActivationBackend(ABC):
         deterministic placeholder so the dummy pipeline is self-contained."""
         return f"[answer:{abs(hash((role_prompt, question))) % 10_000}]"
 
+    def generate_batch(self, role_prompt: str, questions: list[str]) -> list[str]:
+        """Answer many questions at once. Default loops `generate`; real backends override with a
+        true batched generation (the big speedup — autoregressive generation is the bottleneck)."""
+        return [self.generate(role_prompt, q) for q in questions]
+
+    def hidden_states_batch(self, role_prompt: str, qa_pairs: list[tuple[str, str]]
+                            ) -> list[dict[int, np.ndarray]]:
+        """Per-(question,answer) layer vectors for many pairs. Default loops; real backends may batch."""
+        return [self.hidden_states(role_prompt, q, a) for q, a in qa_pairs]
+
     def generate_steered(self, role_prompt: str, question: str, vector, layer: int, coeff: float) -> str:
         """Future Work #5: generate while adding `coeff * vector` to `layer`'s residual stream.
         Default falls back to unsteered generation (dummy)."""
@@ -196,8 +206,77 @@ class NNSightBackend(ActivationBackend):
         return self.tokenizer.decode(ids[in_len:], skip_special_tokens=True).strip()
 
 
+class HFBackend(ActivationBackend):
+    """transformers backend — BATCHED generation + `output_hidden_states` extraction. Model-agnostic
+    (any HF causal LM, incl. Instruct models), runs on local/cluster GPU. This is the scalable backend:
+    it batches the autoregressive generation (the bottleneck) and reads layer activations in one forward
+    pass — no TransformerLens model support needed, no manual hooks.
+    """
+
+    def __init__(self, cfg: Config):
+        super().__init__(cfg)
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        model_id = cfg.require_model()
+        self._torch = torch
+        self.tok = AutoTokenizer.from_pretrained(model_id, padding_side="left")
+        if self.tok.pad_token is None:
+            self.tok.pad_token = self.tok.eos_token
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_id, torch_dtype="auto", device_map="auto")
+        self.model.eval()
+        self._dim = self.model.config.hidden_size
+        self.batch_size = 16
+
+    @property
+    def hidden_dim(self) -> int:
+        return self._dim
+
+    def _device(self):
+        return next(self.model.parameters()).device
+
+    def generate_batch(self, role_prompt: str, questions: list[str]) -> list[str]:
+        torch = self._torch
+        prefixes = [_chat_prefix(self.tok, role_prompt, q) for q in questions]
+        out: list[str] = []
+        for i in range(0, len(prefixes), self.batch_size):
+            chunk = prefixes[i:i + self.batch_size]
+            enc = self.tok(chunk, return_tensors="pt", padding=True).to(self._device())
+            with torch.no_grad():
+                gen = self.model.generate(
+                    **enc, max_new_tokens=self.cfg.max_new_tokens, do_sample=True,
+                    temperature=1.0, top_p=0.95, pad_token_id=self.tok.pad_token_id)
+            new = gen[:, enc["input_ids"].shape[1]:]            # only the freshly generated tokens
+            out.extend(s.strip() for s in self.tok.batch_decode(new, skip_special_tokens=True))
+        return out
+
+    def generate(self, role_prompt: str, question: str) -> str:
+        return self.generate_batch(role_prompt, [question])[0]
+
+    def hidden_states(self, role_prompt: str, question: str, answer: str) -> dict[int, np.ndarray]:
+        return self.hidden_states_batch(role_prompt, [(question, answer)])[0]
+
+    def hidden_states_batch(self, role_prompt, qa_pairs):
+        torch = self._torch
+        results: list = [None] * len(qa_pairs)
+        for i in range(0, len(qa_pairs), self.batch_size):
+            chunk = qa_pairs[i:i + self.batch_size]
+            prefixes = [_chat_prefix(self.tok, role_prompt, q) for q, _ in chunk]
+            fulls = [p + a for p, (_, a) in zip(prefixes, chunk)]
+            ans_lens = [max(1, len(self.tok(f)["input_ids"]) - len(self.tok(p)["input_ids"]))
+                        for p, f in zip(prefixes, fulls)]
+            enc = self.tok(fulls, return_tensors="pt", padding=True).to(self._device())
+            with torch.no_grad():
+                hs = self.model(**enc, output_hidden_states=True).hidden_states  # (L+1) x (B,S,dim)
+            for j, alen in enumerate(ans_lens):
+                # left-padded -> the real answer tokens are the LAST `alen` positions
+                results[i + j] = {l: _to_numpy(hs[l][j, -alen:, :].mean(dim=0)) for l in self.cfg.layers}
+        return results
+
+
 _BACKENDS = {
     "dummy": DummyBackend,
+    "hf": HFBackend,
     "transformer_lens": TransformerLensBackend,
     "nnsight": NNSightBackend,
 }

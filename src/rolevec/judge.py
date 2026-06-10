@@ -48,6 +48,11 @@ class Judge(ABC):
     def score(self, *, role_name: str, role_prompt: str, question: str, answer: str,
               in_domain: bool, dimensions: list[str]) -> int: ...
 
+    def score_batch(self, items: list[dict]) -> list[int]:
+        """Score many (role_name, role_prompt, question, answer, in_domain, dimensions) dicts.
+        Default loops `score`; PromptJudge overrides with a batched model call."""
+        return [self.score(**it) for it in items]
+
 
 class HeuristicJudge(Judge):
     """Offline placeholder: deterministic pseudo-scores for pipeline wiring. NOT for real results."""
@@ -60,22 +65,36 @@ class HeuristicJudge(Judge):
 
 class PromptJudge(Judge):
     """Shared 0-3 scoring: build the rubric prompt, call a model, parse the integer.
-    Subclasses implement `_call_model(prompt) -> text`."""
+    Subclasses implement `_call_model(prompt) -> text` (and may override `_call_model_batch`)."""
 
     @abstractmethod
     def _call_model(self, prompt: str) -> str: ...
 
-    def score(self, *, role_name, role_prompt, question, answer, in_domain, dimensions) -> int:
-        prompt = JUDGE_PROMPT.format(
+    def _call_model_batch(self, prompts: list[str]) -> list[str]:
+        return [self._call_model(p) for p in prompts]
+
+    @staticmethod
+    def _build_prompt(role_name, role_prompt, question, answer, in_domain, dimensions) -> str:
+        return JUDGE_PROMPT.format(
             role_name=role_name, role_prompt=role_prompt, question=question, answer=answer,
             domain="IN-DOMAIN" if in_domain else "OUT-OF-DOMAIN",
             dimensions=", ".join(dimensions) or "the role's characteristic habits",
             domain_clause="uses domain reasoning" if in_domain
             else "uses the role's characteristic habits in an unfamiliar context",
         )
-        reply = self._call_model(prompt)
+
+    @staticmethod
+    def _parse(reply: str) -> int:
         m = re.search(r"[0-3]", reply)
         return int(m.group()) if m else 0
+
+    def score(self, *, role_name, role_prompt, question, answer, in_domain, dimensions) -> int:
+        return self._parse(self._call_model(
+            self._build_prompt(role_name, role_prompt, question, answer, in_domain, dimensions)))
+
+    def score_batch(self, items: list[dict]) -> list[int]:
+        prompts = [self._build_prompt(**it) for it in items]
+        return [self._parse(r) for r in self._call_model_batch(prompts)]
 
 
 class LocalJudge(PromptJudge):
@@ -98,11 +117,16 @@ class LocalJudge(PromptJudge):
         return self._pipe
 
     def _call_model(self, prompt: str) -> str:
-        out = self._pipe_lazy()(
-            [{"role": "user", "content": prompt}],
-            max_new_tokens=self.max_new_tokens, do_sample=False, return_full_text=False,
+        return self._call_model_batch([prompt])[0]
+
+    def _call_model_batch(self, prompts: list[str]) -> list[str]:
+        msgs = [[{"role": "user", "content": p}] for p in prompts]
+        outs = self._pipe_lazy()(
+            msgs, max_new_tokens=self.max_new_tokens, do_sample=False,
+            return_full_text=False, batch_size=min(len(msgs), 16),
         )
-        return out[0]["generated_text"]
+        # transformers pipeline returns a list per input
+        return [(o[0] if isinstance(o, list) else o)["generated_text"] for o in outs]
 
 
 class LLMJudge(PromptJudge):
