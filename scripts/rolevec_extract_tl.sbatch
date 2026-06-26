@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-CONDA_SH="/path/to/miniconda3/etc/profile.d/conda.sh"
+CONDA_SH="${CONDA_SH:-/path/to/miniconda3/etc/profile.d/conda.sh}"  # point at your cluster's conda.sh
 ENV_PATH="${ROLEVEC_ENV:-rolevec}"
 if [ -f "$CONDA_SH" ]; then source "$CONDA_SH"; conda activate "$ENV_PATH"; fi
 

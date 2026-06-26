@@ -23,5 +23,5 @@ PASS/FAIL and exits non-zero if any required check fails, so the whole thing is 
 
 ## Status
 - Today (dummy backend): the full roadmap runs end-to-end and self-validates with no GPU.
-- Real models: choose a backend (recommended: `nnsight` on **NDIF**, free [redacted] access),
+- Real models: choose a backend (recommended: `nnsight` on **NDIF**, free academic access),
   implement the two backend integration points, and the same `run_all` produces real results.

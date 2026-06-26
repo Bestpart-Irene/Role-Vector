@@ -6,7 +6,7 @@ score weighting, metrics, steering) is identical regardless of backend.
 
 - `DummyBackend` runs with no model (synthetic activations) for wiring/tests.
 - `TransformerLensBackend` / `NNSightBackend` are REAL implementations behind lazy imports, so importing
-  this module never requires torch. nnsight can run remotely on NDIF (free [redacted] access).
+  this module never requires torch. nnsight can run remotely on NDIF (free academic access).
 """
 from __future__ import annotations
 
@@ -140,7 +140,7 @@ class NNSightBackend(ActivationBackend):
     """nnsight backend — extraction + steering injection, LOCAL or REMOTE on NDIF.
 
     Env:
-      ROLEVEC_NDIF_REMOTE=1   run on NDIF (no local GPU; free [redacted] access)
+      ROLEVEC_NDIF_REMOTE=1   run on NDIF (no local GPU; free academic access)
       NDIF_API_KEY=...        your NDIF key (also settable via nnsight.CONFIG.set_default_api_key)
     """
 

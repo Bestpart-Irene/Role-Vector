@@ -4,8 +4,8 @@ How to turn the synthetic dummy run into real model results. The pipeline code d
 you pick a backend, install its deps, set a couple of env vars, and run the same commands.
 
 ## Recommended path — nnsight on NDIF (free, no local GPU)
-NDIF (National Deep Inference Fabric, NSF-funded, at [redacted] / [redacted]) runs nnsight requests
-remotely on shared GPUs, up to Llama-3.1-405B. As a [redacted] student you can apply for access.
+NDIF (National Deep Inference Fabric, NSF-funded) runs nnsight requests remotely on shared GPUs,
+up to Llama-3.1-405B. Eligible academic researchers can apply for free access.
 
 1. **Get access & key:** register at https://ndif.us/ → get an NDIF API key.
 2. **Install:** `pip install nnsight transformers` (no local `torch` GPU build needed for remote).
@@ -32,18 +32,17 @@ PYTHONPATH=src python -m rolevec.pipeline --backend transformer_lens --model Qwe
 ```
 `TransformerLensBackend` uses `run_with_cache` and pools `resid_post` over the answer tokens.
 
-## Cluster route — SLURM cluster (GPU, TransformerLens)
-SSH is already configured on this machine as the alias **`cluster`** (reused from the
-Reinforcement-Casino project) — there is **no SSH key to copy**. Account `user`,
-scratch `/scratch/user/`, conda base `/path/to/conda/...`, partition `gpu`.
+## Cluster route — SLURM GPU cluster (TransformerLens)
+Configure an SSH host alias for your cluster in `~/.ssh/config` (no key is copied into this repo).
+Set your own scratch/home paths, conda base, and partition in `scripts/run_on_cluster.sbatch`.
 ```bash
-ssh cluster
-git clone <this repo> /home/user/Role-Vector
-cd /home/user/Role-Vector
+ssh <cluster>
+git clone <this repo> ~/Role-Vector
+cd ~/Role-Vector
 # put HF_TOKEN + ANTHROPIC_API_KEY in ~/.bashrc (never in git)
 sbatch scripts/run_on_cluster.sbatch          # creates the env on first run, then runs the roadmap
 ```
-NDIF (remote) and cluster (local GPU) are **independent routes** — NDIF needs no cluster; the
+NDIF (remote) and the cluster (local GPU) are **independent routes** — NDIF needs no cluster; the
 cluster needs no NDIF key. Pick one.
 
 ## The judge (real role-adherence scoring) — **FREE by default**

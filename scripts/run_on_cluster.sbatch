@@ -1,11 +1,11 @@
 #!/bin/bash
-# Role Vector Validation — run the full roadmap on [redacted]'s SLURM cluster (local
-# TransformerLens path, GPU). Conventions copied from the Reinforcement-Casino project.
+# Role Vector Validation — run the full roadmap on a SLURM GPU cluster (local
+# TransformerLens path, GPU).
 #
 # Usage:
-#   ssh cluster                 # SSH alias is already configured (no key to "sync")
-#   # one-time: git clone the repo to /home/user/Role-Vector and create the env (see below)
-#   cd /home/user/Role-Vector
+#   ssh <cluster>                         # use your own SSH alias / login host
+#   # one-time: git clone the repo to ~/Role-Vector and create the env (see below)
+#   cd ~/Role-Vector
 #   sbatch scripts/run_on_cluster.sbatch
 #
 #SBATCH --job-name=rolevec
@@ -24,9 +24,9 @@ set -euo pipefail
 
 # ---- config (edit these) ----
 # Everything lives on /scratch (big quota); /home is too small for repo + runs + caches.
-REPO="/scratch/user/Role-Vector"
-ENV_PREFIX="/scratch/user/conda_envs/rolevec"
-CONDA_SH="/path/to/miniconda3/etc/profile.d/conda.sh"
+REPO="/scratch/$USER/Role-Vector"
+ENV_PREFIX="/scratch/$USER/conda_envs/rolevec"
+CONDA_SH="${CONDA_SH:-/path/to/miniconda3/etc/profile.d/conda.sh}"  # point at your cluster's conda.sh
 MODEL="${ROLEVEC_MODEL:-Qwen/Qwen2.5-1.5B-Instruct}"   # Instruct model (base models can't role-play)
 RUNS="${RUNS:-30}"
 BACKEND="${BACKEND:-hf}"                        # hf = batched generation (fast, model-agnostic)
@@ -46,10 +46,10 @@ else
 fi
 
 # ---- caches (all on /scratch — keep /home empty) ----
-export HF_HOME="/scratch/user/hf_cache"
-export HF_DATASETS_CACHE="/scratch/user/hf_cache/datasets"
-export PIP_CACHE_DIR="/scratch/user/pip_cache"
-export XDG_CACHE_HOME="/scratch/user/.cache"
+export HF_HOME="/scratch/$USER/hf_cache"
+export HF_DATASETS_CACHE="/scratch/$USER/hf_cache/datasets"
+export PIP_CACHE_DIR="/scratch/$USER/pip_cache"
+export XDG_CACHE_HOME="/scratch/$USER/.cache"
 export PYTHONUNBUFFERED=1
 # Judge: FREE open-weight by default (no API key). Override via env if desired.
 export ROLEVEC_JUDGE_BACKEND="${ROLEVEC_JUDGE_BACKEND:-local}"

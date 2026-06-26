@@ -39,7 +39,7 @@ plausibility is necessary but not sufficient — validate at the activation leve
 |---|---|---|
 | **Designing Role Vectors** (arXiv 2502.12055) | difference-in-means role vectors steering domain expertise while preserving general ability | Nearest-neighbour prior work — **must cite & compare** |
 | **TransformerLens** | PyTorch hooks, `run_with_cache` → per-layer residual-stream activations | Primary extraction backend for white-box HF models |
-| **nnsight + NDIF** ⭐ | nnsight extends PyTorch with deferred remote execution; **NDIF** (National Deep Inference Fabric) executes it on shared GPUs | **[redacted] home-team infra** — see callout below |
+| **nnsight + NDIF** ⭐ | nnsight extends PyTorch with deferred remote execution; **NDIF** (National Deep Inference Fabric) executes it on shared GPUs | **Free remote GPU infra** — see callout below |
 | **nnsight** | extraction + injection (intervention) phases; baukit successor | Role-minus-default intervention + steering validation |
 | **vllm-lens** (UK AISI) | extract residual activations & apply steering vectors on vLLM | High-throughput for 30-run repeated extraction |
 | **llm_steer / repeng** | lightweight steering-vector experimentation | Quick prototyping |
@@ -53,15 +53,15 @@ plausibility is necessary but not sufficient — validate at the activation leve
 - Persona Vectors (OpenReview) — https://openreview.net/forum?id=HpUDi5Pe8S
 - BILLY — https://bai1026.github.io/LLM_Persona/
 
-### ⭐ NDIF — National Deep Inference Fabric ([redacted] home-team infra)
-NSF-funded (~$9M) inference fabric **at [redacted]** ([redacted]) giving U.S. researchers **free remote
+### ⭐ NDIF — National Deep Inference Fabric (free remote GPU infra)
+NSF-funded (~$9M) inference fabric giving U.S. researchers **free remote
 access to open-weight model internals**, up to **Llama-3.1-405B**, via `nnsight`'s deferred remote
 execution — no local GPU required. This is the single most relevant external resource for this project:
 it lets us extract role-minus-default activations from large white-box models for free, and run all 30
 repeated extractions at scale. Recommended path once a model is chosen: `nnsight` backend with
-`remote=True` (set NDIF API key). Apply for pilot access as a [redacted] student.
+`remote=True` (set NDIF API key). Eligible academic researchers can apply for pilot access.
 - NDIF — https://ndif.us/
-- nnsight + NDIF paper — https://ndif.us/ · https://openreview.net/forum?id=MxbEiFRf39
+- nnsight + NDIF paper — https://openreview.net/forum?id=MxbEiFRf39
 - GitHub — https://github.com/ndif-team
 - nnsight — https://nnsight.net/
 

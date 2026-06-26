@@ -31,7 +31,7 @@ change. For the full multi-track run + validation gate, use the `run-all` skill.
 ## Backends (model deferred)
 - `dummy` — random but stable activations; runs with no model. Default; use for wiring/tests.
 - `transformer_lens` — local white-box HF model (Llama/Qwen/Gemma), `run_with_cache`.
-- `nnsight` — extraction + intervention; **can run remotely on NDIF** (free [redacted] access to
+- `nnsight` — extraction + intervention; **can run remotely on NDIF** (free academic access to
   large open-weight models incl. Llama-3.1-405B) — no local GPU needed.
   Fill the integration point in `src/rolevec/backends.py`.
 

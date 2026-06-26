@@ -4,7 +4,7 @@
 role personas into activation-space vectors and test whether they (1) carry domain-sensitive role
 signal, (2) are stably reproducible across repeated extraction, and (3) are separable from other roles.
 
-> From "Prompted Agents" to "Validated Personas" — Jose L. Sampedro Mazon, [redacted] / [redacted].
+> From "Prompted Agents" to "Validated Personas" — Jose L. Sampedro Mazon.
 > PI: Dr. Nadim Saad · Advisor: Dr. Ilmi Yoon. Source of record: `Role_Vector_Interpretability_Prez_vFinal.pdf`.
 
 ## Research question

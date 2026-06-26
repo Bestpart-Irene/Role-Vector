@@ -1,8 +1,7 @@
-# Cluster scripts (SLURM @ [redacted])
+# Cluster scripts (SLURM GPU cluster)
 
-New, self-contained SLURM scripts for running the **`transformer_lens`** extraction backend
-on a cluster GPU. Modeled on the Reinforcement-Casino sbatch conventions but rewritten for
-`rolevec`. The `dummy` and `nnsight` (NDIF remote) backends do **not** need a cluster job —
+Self-contained SLURM scripts for running the **`transformer_lens`** extraction backend
+on a GPU node. The `dummy` and `nnsight` (NDIF remote) backends do **not** need a cluster job —
 run those locally; see `../docs/ndif-setup.md`.
 
 ## What's here
@@ -24,7 +23,7 @@ run those locally; see `../docs/ndif-setup.md`.
 ## Quick start (from your laptop)
 ```bash
 # 1) one-time: build the env on the cluster
-ssh cluster 'bash -s' < scripts/setup_cluster_env.sh
+ssh <cluster> 'bash -s' < scripts/setup_cluster_env.sh
 
 # 2) ship code + submit a smoke job
 MODEL=Qwen/Qwen2.5-1.5B bash scripts/transfer_launch.sh smoke
@@ -33,5 +32,6 @@ MODEL=Qwen/Qwen2.5-1.5B bash scripts/transfer_launch.sh smoke
 MODEL=Qwen/Qwen2.5-1.5B bash scripts/transfer_launch.sh extract
 ```
 
-> Cluster connection lives in `~/.ssh/config` under the `cluster` host
-> (HostName REDACTED-HOST, User user). The private key stays in `~/.ssh` and is never copied here.
+> Cluster connection lives in your local `~/.ssh/config` (define a host alias with your own
+> HostName / User). The private key stays in `~/.ssh` and is never copied here. Override the
+> alias at submit time with `SSH_HOST=<your-host> bash scripts/transfer_launch.sh ...`.

@@ -1,10 +1,10 @@
 #!/bin/bash
 # One-time: create the `rolevec` conda env on the cluster with the TransformerLens backend deps.
 # Idempotent — re-running just updates pip deps. Run via:
-#   ssh cluster 'bash -s' < scripts/setup_cluster_env.sh
+#   ssh <cluster> 'bash -s' < scripts/setup_cluster_env.sh
 set -euo pipefail
 
-CONDA_SH="/path/to/miniconda3/etc/profile.d/conda.sh"
+CONDA_SH="${CONDA_SH:-/path/to/miniconda3/etc/profile.d/conda.sh}"  # point at your cluster's conda.sh
 ENV_NAME="${ROLEVEC_ENV_NAME:-rolevec}"
 
 source "$CONDA_SH"

@@ -3,12 +3,12 @@
 #   MODEL=Qwen/Qwen2.5-1.5B bash scripts/transfer_launch.sh smoke    # rolevec_smoke_1gpu.sbatch
 #   MODEL=Qwen/Qwen2.5-1.5B bash scripts/transfer_launch.sh extract  # rolevec_extract_tl.sbatch
 #
-# Connection comes from ~/.ssh/config host `cluster` (HostName REDACTED-HOST,
-# User user). The private key never leaves ~/.ssh and is never rsync'd.
+# Connection comes from an ~/.ssh/config host alias you define (override with SSH_HOST=...).
+# The private key never leaves ~/.ssh and is never rsync'd.
 set -euo pipefail
 
 SSH_HOST="${SSH_HOST:-cluster}"
-REMOTE_DIR="${REMOTE_DIR:-/home/user/role-vector}"
+REMOTE_DIR="${REMOTE_DIR:-role-vector}"
 JOB="${1:-smoke}"
 
 case "$JOB" in
